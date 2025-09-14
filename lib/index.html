@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="cleansera_dashboards">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Afrohub Dashboards</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Loading Script -->
+  <script
+          src="https://unpkg.com/@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs"
+          type="module"
+  ></script>
+
+  <style>
+    #splash-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #ffffff; /* or your custom bg */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+
+<!-- Splash screen -->
+<div id="splash-screen">
+  <div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
+    <dotlottie-player
+            src="https://lottie.host/ff51ff2f-d36c-4ea2-8ebe-05faff7aa5ee/VNzhHZncXH.lottie"
+            background="transparent"
+            speed="1"
+            style="width: 320px; height: 320px;"
+            loop
+            autoplay>
+    </dotlottie-player>
+
+    <p style="margin-top: 20px; color: #333; font-family: 'Poppins', sans-serif; max-width: 300px;">
+      Welcome to <strong>Afrohub</strong>, kindly wait a few seconds while we get things ready.
+    </p>
+  </div>
+</div>
+
+
+<!-- Flutter app will replace this -->
+<script>
+  window.addEventListener('flutter-first-frame', function () {
+    const splash = document.getElementById('splash-screen');
+    if (splash) splash.remove();
+  });
+</script>
+
+<script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
