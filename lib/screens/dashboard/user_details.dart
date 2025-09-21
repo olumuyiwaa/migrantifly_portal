@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../components/event_list_table.dart';
+import '../../components/application_list_table.dart';
 import '../../components/user_info_preview.dart';
 import '../../constants.dart';
 import '../../models/class_users.dart';
@@ -41,7 +41,7 @@ class _UserDetailsState extends State<UserDetails> {
       ),
       SizedBox(
           height: 692,
-          child: EventListTable(
+          child: ApplicationListTable(
             userID: widget.user.id, filter: [],
           ))
     ]));

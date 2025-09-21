@@ -1,26 +1,35 @@
 import 'package:flutter/material.dart';
 
 import '../constants.dart';
-import '../models/class_business.dart';
-import '../models/class_countries.dart';
-import '../models/class_applications.dart';
-import '../models/class_users.dart';
+import '../models/dashboard_stats.dart';
 
 class StatCards extends StatelessWidget {
-  final List<User> users;
-  final List<Application> events;
-  final List<Country> countries;
-  final List<Business> businesses;
+  final DashboardStats? stats;
   final ValueChanged<int> onItemTapped;
   final ValueChanged<String> onTitleTapped;
-  const StatCards(
-      {super.key, required this.onItemTapped, required this.onTitleTapped, required this.users, required this.events, required this.countries, required this.businesses});
+
+  const StatCards({
+    super.key,
+    required this.stats,
+    required this.onItemTapped,
+    required this.onTitleTapped,
+  });
 
   @override
   Widget build(BuildContext context) {
+    if (stats == null){
+      return Container(
+        margin: EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+        color: secondaryColor,
+        borderRadius: const BorderRadius.all(Radius.circular(10)),
+      ),height:580,child: Center(child: CircularProgressIndicator(),),);
+    }
+    else {
+      final overview = stats!.overview;
     return GridView.count(
       padding: const EdgeInsets.only(bottom: defaultPadding),
-      crossAxisCount: 2,
+      crossAxisCount: 3,
       crossAxisSpacing: 8,
       mainAxisSpacing: 8,
       childAspectRatio: .89,
@@ -28,44 +37,54 @@ class StatCards extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       children: [
         StatCard(
-          title: 'Users',
-          value: users.length.toString(),
+          title: 'Active Clients',
+          value: overview.activeClients.toString(),
           color: Colors.green,
           onTap: () {
             onItemTapped(1);
             onTitleTapped("Users");
-          }, // implement action
+          },
         ),
         StatCard(
-          title: 'Applications',
-          value: events.length.toString(),
+          title: 'Total Applications',
+          value: overview.totalApplications.toString(),
           color: Colors.deepPurple,
           onTap: () {
             onItemTapped(2);
             onTitleTapped("Applications");
           },
         ),
+
         StatCard(
-          title: 'Businesses',
-          value: businesses.length.toString(),
-          color: Colors.deepOrange,
+          title: 'Pending Consultations',
+          value: overview.pendingConsultations.toString(),
+          color: Colors.orange,
           onTap: () {
             onItemTapped(4);
-            onTitleTapped("Market");
+            onTitleTapped("Consultations");
           },
         ),
         StatCard(
-          title: 'African Countries',
-          value: countries.length.toString(),
+          title: 'Pending Documents',
+          value: overview.pendingDocuments.toString(),
           color: Colors.lightBlue,
           onTap: () {
             onItemTapped(5);
-            onTitleTapped("Countries");
+            onTitleTapped("Documents");
+          },
+        ),
+        StatCard(
+          title: 'Total Revenue',
+          value: overview.totalRevenue.toString(),
+          color: Colors.indigo,
+          onTap: () {
+            onItemTapped(8);
+            onTitleTapped("Transactions");
           },
         ),
       ],
     );
-  }
+  }}
 }
 
 class StatCard extends StatelessWidget {
@@ -108,7 +127,7 @@ class StatCard extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               )),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(value,
+            Text(title.contains("Revenue")? "\$ $value":value,
                 style: const TextStyle(
                   fontSize: 24,
                   color: Colors.white,

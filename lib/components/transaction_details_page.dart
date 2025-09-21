@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/class_transactions.dart';
 
-
 class TransactionDetailsPage extends StatefulWidget {
   final Transaction transaction;
 
@@ -21,7 +20,6 @@ class TransactionDetailsPage extends StatefulWidget {
 
 class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
   bool _isLoading = false;
-
 
   void _copyToClipboard(String text, String label) {
     Clipboard.setData(ClipboardData(text: text));
@@ -49,21 +47,19 @@ class _TransactionDetailsPageState extends State<TransactionDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final transaction = widget.transaction;
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.blue))
           : Column(
         children: [
-          // Wiki-style header
-          WikiTransactionHeader(
-            transaction: widget.transaction,
-
-          ),
+          WikiTransactionHeader(transaction: transaction),
           Expanded(
             child: SingleChildScrollView(
               child: WikiTransactionContent(
-                transaction: widget.transaction,
+                transaction: transaction,
                 onCopy: _copyToClipboard,
               ),
             ),
@@ -97,35 +93,21 @@ class WikiTransactionHeader extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 12),
-            // Title and actions
             Row(
               children: [
                 Expanded(
                   child: Text(
                     "Transaction Details",
                     style: const TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w500,
                       fontFamily: 'Georgia',
                     ),
                   ),
                 ),
-                // Action buttons
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        // Export/Print functionality
-                      },
-                      icon: Icon(Icons.print, color: Colors.grey[600]),
-                      tooltip: "Print Receipt",
-                    ),
-                  ],
-                ),
               ],
             ),
             const SizedBox(height: 8),
-            // Transaction status bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -171,39 +153,30 @@ class WikiTransactionContent extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Main content area (left side)
+          // Left side
           Expanded(
             flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Transaction Overview
                 WikiSection(
                   title: "Transaction Overview",
                   content: _buildTransactionOverview(),
                 ),
                 const SizedBox(height: 24),
 
-                // Event Information
-                if (transaction.ticketId != null)
-                  Column(
-                    children: [
-                      WikiSection(
-                        title: "Event Information",
-                        content: _buildEventInfo(),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                WikiSection(
+                  title: "Client Information",
+                  content: _buildClientInfo(),
+                ),
+                const SizedBox(height: 24),
 
-                // Payment Details
                 WikiSection(
                   title: "Payment Details",
                   content: _buildPaymentDetails(),
                 ),
                 const SizedBox(height: 24),
 
-                // System Information
                 WikiSection(
                   title: "System Information",
                   content: _buildSystemInfo(),
@@ -211,10 +184,8 @@ class WikiTransactionContent extends StatelessWidget {
               ],
             ),
           ),
-
           const SizedBox(width: 24),
-
-          // Sidebar (right side)
+          // Right side
           Expanded(
             flex: 1,
             child: WikiTransactionInfoBox(
@@ -228,80 +199,44 @@ class WikiTransactionContent extends StatelessWidget {
   }
 
   Widget _buildTransactionOverview() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "This transaction represents a ${transaction.paymentStatus} payment for ${transaction.ticketCount} ticket(s) "
-              "${transaction.ticketId != null ? 'for the event "${transaction.ticketId!.title}"' : ''}. "
-              "The transaction was initiated on ${DateFormat('MMMM dd, yyyy \'at\' HH:mm').format(transaction.createdAt)} "
-              "and has a current status of ${transaction.status ?? 'Unknown'}.",
-          style: const TextStyle(
-            fontSize: 16,
-            height: 1.6,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+    return Text(
+      "This transaction of ${transaction.currency} ${transaction.amount.toStringAsFixed(2)} "
+          "was made by ${transaction.clientFullName} "
+          "on ${DateFormat('MMMM dd, yyyy \'at\' HH:mm').format(transaction.createdAt)} "
+          "using ${transaction.paymentMethod}. Current status: ${transaction.status}.",
+      style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
     );
   }
 
-  Widget _buildEventInfo() {
-    final ticket = transaction.ticketId!;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Event: ${ticket.title}\n"
-              "Location: ${ticket.location}\n"
-              "Date: ${DateFormat('MMMM dd, yyyy').format(DateTime.parse(ticket.date))}\n"
-              "Category: ${ticket.category}",
-          style: const TextStyle(
-            fontSize: 16,
-            height: 1.6,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+  Widget _buildClientInfo() {
+    final client = transaction.client;
+    return Text(
+      "Name: ${client.profile?.fullName ?? client.email}\n"
+          "Email: ${client.email}\n"
+          "Phone: ${client.profile?.phoneNumber ?? 'N/A'}\n"
+          "Address: ${client.profile?.fullAddress ?? ''}\n"
+          "Nationality: ${client.profile?.countryLocated ?? 'N/A'}",
+      style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
     );
   }
 
   Widget _buildPaymentDetails() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "Amount Paid: \$${transaction.amount.toStringAsFixed(2)}\n"
-              "Price Per Ticket: \$${(transaction.pricePerTicket ?? 0).toStringAsFixed(2)}\n"
-              "Number of Tickets: ${transaction.ticketCount}\n"
-              "Ticket Type: ${transaction.ticketTypeName ?? 'Standard'}\n"
-              "Payment Method: Stripe",
-          style: const TextStyle(
-            fontSize: 16,
-            height: 1.6,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+    return Text(
+      "Amount: ${transaction.currency} ${transaction.amount.toStringAsFixed(2)}\n"
+          "Payment Method: ${transaction.paymentMethod}\n"
+          "Invoice Number: ${transaction.invoiceNumber}\n"
+          "Invoice: ${transaction.invoiceUrl}",
+      style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
     );
   }
 
   Widget _buildSystemInfo() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "User ID: ${transaction.userId}\n"
-              "Stripe Session: ${transaction.stripeSessionId ?? 'N/A'}\n"
-              "Created: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(transaction.createdAt)}\n"
-              "Last Updated: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(transaction.createdAt)}",
-          style: const TextStyle(
-            fontSize: 16,
-            height: 1.6,
-            color: Colors.black87,
-          ),
-        ),
-      ],
+    return Text(
+      "Gateway Reference: ${transaction.gatewayReference}\n"
+          "Visa Type: ${transaction.application?.visaType ?? 'N/A'}\n"
+          "Created At: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(transaction.createdAt)}\n"
+          "Updated At: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(transaction.updatedAt)}",
+      style: const TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
     );
   }
 }
@@ -310,11 +245,7 @@ class WikiSection extends StatelessWidget {
   final String title;
   final Widget content;
 
-  const WikiSection({
-    super.key,
-    required this.title,
-    required this.content,
-  });
+  const WikiSection({super.key, required this.title, required this.content});
 
   @override
   Widget build(BuildContext context) {
@@ -324,9 +255,7 @@ class WikiSection extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: Colors.grey, width: 1),
-            ),
+            border: Border(bottom: BorderSide(color: Colors.grey, width: 1)),
           ),
           child: Text(
             title,
@@ -357,16 +286,12 @@ class WikiTransactionInfoBox extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'paid':
       case 'completed':
         return Colors.green;
       case 'pending':
         return Colors.orange;
-      case 'unpaid':
       case 'failed':
         return Colors.red;
-      case 'refunded':
-        return Colors.blue;
       default:
         return Colors.grey;
     }
@@ -380,170 +305,63 @@ class WikiTransactionInfoBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         color: Colors.grey[50],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Info box header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(8),
-                topRight: Radius.circular(8),
-              ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Transaction Summary",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            const Divider(),
+            _buildInfoRow("Status", transaction.status.toUpperCase(),
+                color: _getStatusColor(transaction.status)),
+            const SizedBox(height: 8),
+            _buildInfoRow(
+                "Amount", "${transaction.currency} ${transaction.amount}"),
+            const SizedBox(height: 8),
+            _buildInfoRow("Method", transaction.paymentMethod),
+            const SizedBox(height: 8),
+            _buildInfoRow("Date",
+                DateFormat('MMM dd, yyyy').format(transaction.createdAt)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: () =>
+                  onCopy(transaction.transactionId, "Transaction ID"),
+              icon: const Icon(Icons.copy, size: 16),
+              label: const Text("Copy Transaction ID"),
             ),
-            child: const Text(
-              "Transaction Summary",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final url = Uri.parse(transaction.invoiceUrl);
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url);
+                }
+              },
+              icon: const Icon(Icons.picture_as_pdf, size: 16),
+              label: const Text("Open Invoice"),
             ),
-          ),
-
-          // Info content
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Transaction image or icon
-                if (transaction.ticketId?.image.isNotEmpty ?? false)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        transaction.ticketId!.image,
-                        width: double.infinity,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: double.infinity,
-                            height: 120,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(
-                              Icons.event,
-                              size: 40,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-
-                // Key information
-                _buildInfoRow("Status", transaction.paymentStatus.toUpperCase(),
-                    color: _getStatusColor(transaction.paymentStatus)),
-                const SizedBox(height: 8),
-                _buildInfoRow("Amount", "\$${transaction.amount.toStringAsFixed(2)}"),
-                const SizedBox(height: 8),
-                _buildInfoRow("Tickets", "${transaction.ticketCount}"),
-                const SizedBox(height: 8),
-                _buildInfoRow("Date", DateFormat('MMM dd, yyyy').format(transaction.createdAt)),
-
-                if (transaction.ticketId != null) ...[
-                  const SizedBox(height: 16),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Event Details",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    transaction.ticketId!.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    transaction.ticketId!.location,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 16),
-                const Divider(),
-                const SizedBox(height: 8),
-
-                // Action buttons
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () => onCopy(transaction.transactionId, "Transaction ID"),
-                      icon: const Icon(Icons.copy, size: 16),
-                      label: const Text("Copy ID"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[50],
-                        foregroundColor: Colors.blue[700],
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    if (transaction.stripeSessionId != null)
-                      ElevatedButton.icon(
-                        onPressed: () => onCopy(transaction.stripeSessionId!, "Stripe Session ID"),
-                        icon: const Icon(Icons.payment, size: 16),
-                        label: const Text("Copy Stripe ID"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.purple[50],
-                          foregroundColor: Colors.purple[700],
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildInfoRow(String label, String value, {Color? color}) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 60,
+          width: 70,
           child: Text(
             "$label:",
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
         ),
         Expanded(
           child: Text(
             value,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: color ?? Colors.black87,
-            ),
+                fontSize: 12, fontWeight: FontWeight.w500, color: color),
           ),
         ),
       ],

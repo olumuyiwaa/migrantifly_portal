@@ -37,7 +37,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
       // Load cached data first
       transactions = await loadCachedTransactions();
       if (mounted && transactions.isNotEmpty) {
-        setState(() {});
+        setState(() {
+          _isLoadingTransactions = false;
+        });
       }
 
       // Fetch fresh data
@@ -82,9 +84,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
 
   // Check if transaction is completed (paid)
   bool _isTransactionCompleted(Transaction transaction) {
-    return transaction.paymentStatus.toLowerCase() == 'paid' ||
-        transaction.paymentStatus.toLowerCase() == 'completed' ||
-        transaction.paymentStatus.toLowerCase() == 'success';
+    return transaction.status.toLowerCase() == 'paid' ||
+        transaction.status.toLowerCase() == 'completed' ||
+        transaction.status.toLowerCase() == 'success';
   }
 
   // Check if there are any transactions for the selected year
@@ -139,7 +141,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
             _buildHeader(),
             const SizedBox(height: 32),
             _isLoadingTransactions
-                ? const Center(child: CircularProgressIndicator())
+                ? const SizedBox(height: 400,child: Center(child: CircularProgressIndicator()),)
                 : _buildContentSection(),
           ],
         ));

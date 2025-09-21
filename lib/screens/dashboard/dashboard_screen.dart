@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_get.dart';
 import '../../components/analytics_dashboards.dart';
+import '../../components/stats_charts.dart';
 import '../../components/user_list_table.dart';
 import '../../components/stat_cards.dart';
 import '../../components/users_jobs_breakdown.dart';
 import '../../constants.dart';
-import '../../models/class_business.dart';
-import '../../models/class_countries.dart';
+import '../../models/class_consultation.dart';
 import '../../models/class_applications.dart';
 import '../../models/class_users.dart';
+import '../../models/dashboard_stats.dart';
 import '../../responsive.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -37,33 +38,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isLoading=false;
    List<User> allUsers = [];
    List<Application> allEvents = [];
-   List<Country> allCountries = [];
-   List<Business> allBusinesses = [];
+   DashboardStats? dashboardStats;
   Future<void> _fetchAllData() async {
     if (mounted) setState(() => _isLoading = true);
     try {
       allUsers = await loadCachedUsers();
       allEvents = await loadCachedEvents();
-      allCountries = await loadCachedCountries();
-      allBusinesses = await loadCachedBusinesses();
-      if (mounted && allUsers.isNotEmpty && allEvents.isNotEmpty && allCountries.isNotEmpty && allBusinesses.isNotEmpty) {
+      dashboardStats = await loadCachedDashboardStats();
+      if (mounted && allUsers.isNotEmpty && allEvents.isNotEmpty && dashboardStats != null) {
         setState(() {});
       }
       final freshUsers = await fetchUsers();
       await cacheUsers(freshUsers);
       final freshEvents = await getFeaturedEvents();
       await cacheEvents(freshEvents);
-      final freshCountries = await getCountries();
-      await cacheCountries(freshCountries);
-      final freshBusinesses = await fetchBusinesses();
-      await cacheBusinesses(freshBusinesses);
+      final freshDashboardStats = await getDashboardStats();
+      await cacheDashboardStats(freshDashboardStats);
 
       if (mounted) {
         setState(() {
           allUsers = freshUsers;
           allEvents = freshEvents;
-          allCountries = freshCountries;
-          allBusinesses = freshBusinesses;
+          dashboardStats = freshDashboardStats;
           _isLoading = false;
         });
       }
@@ -89,7 +85,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 AnalyticsDashboard(),
                 SizedBox(height: defaultPadding),
                 SizedBox(
-                    height: 692,
+                    height: 652,
                     child: UserListTable(
                       onItemTapped: (int index) {
                         widget.onItemTapped(index);
@@ -110,8 +106,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                     onTitleTapped: (String title) {
                       widget.onTitleTapped(title);
-                    }, users: allUsers, events: allEvents, countries: allCountries, businesses: allBusinesses,
+                    }, stats:dashboardStats,
                   ),
+                if (Responsive.isMobile(context))
+                  SizedBox(height: defaultPadding),
+                if (Responsive.isMobile(context))
+                StatsCharts(stats: dashboardStats),
                 if (Responsive.isMobile(context))
                   SizedBox(height: defaultPadding),
                 if (Responsive.isMobile(context)) UsersBreakdown(users: allUsers,),
@@ -123,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // On Mobile means if the screen is less than 850 we don't want to show it
         if (!Responsive.isMobile(context))
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Column(
               children: [
                 StatCards(
@@ -132,8 +132,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   onTitleTapped: (String title) {
                     widget.onTitleTapped(title);
-                  }, users: allUsers, events: allEvents, countries: allCountries, businesses: allBusinesses,
+                  }, stats: dashboardStats,
                 ),
+                SizedBox(height: defaultPadding),
+                // The charts
+                StatsCharts(stats: dashboardStats),
+                SizedBox(height: defaultPadding),
                 UsersBreakdown(users: allUsers,)
               ],
             ),

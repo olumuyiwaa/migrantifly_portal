@@ -24,7 +24,7 @@ class _TransactionsState extends State<Transactions> {
   List<Transaction> filteredTransactions = [];
   TextEditingController searchController = TextEditingController();
   String selectedStatus = "All";
-  String selectedPaymentStatus = "All";
+  String selectedPaymentMethod = "All";
 
   @override
   void initState() {
@@ -52,7 +52,9 @@ class _TransactionsState extends State<Transactions> {
       transactions = await loadCachedTransactions();
       if (mounted && transactions.isNotEmpty) {
         filteredTransactions = transactions;
-        setState(() {});
+        setState(() {
+          _isLoadingTransactions = false;
+        });
       }
 
       // Fetch fresh data
@@ -83,16 +85,18 @@ class _TransactionsState extends State<Transactions> {
     setState(() {
       filteredTransactions = transactions.where((transaction) {
         bool matchesSearch = transaction.transactionId.toLowerCase().contains(query) ||
-            (transaction.ticketId?.title.toLowerCase().contains(query) ?? false) ||
-            transaction.paymentStatus.toLowerCase().contains(query);
+            transaction.clientFullName.toLowerCase().contains(query) ||
+            transaction.invoiceNumber.toLowerCase().contains(query) ||
+            transaction.status.toLowerCase().contains(query) ||
+            transaction.visaType.toLowerCase().contains(query);
 
         bool matchesStatus = selectedStatus == "All" ||
-            (transaction.status?.toLowerCase() == selectedStatus.toLowerCase());
+            transaction.status.toLowerCase() == selectedStatus.toLowerCase();
 
-        bool matchesPaymentStatus = selectedPaymentStatus == "All" ||
-            transaction.paymentStatus.toLowerCase() == selectedPaymentStatus.toLowerCase();
+        bool matchesPaymentMethod = selectedPaymentMethod == "All" ||
+            transaction.paymentMethod.toLowerCase() == selectedPaymentMethod.toLowerCase();
 
-        return matchesSearch && matchesStatus && matchesPaymentStatus;
+        return matchesSearch && matchesStatus && matchesPaymentMethod;
       }).toList();
 
       // Reset selection if filtered list changes
@@ -158,7 +162,7 @@ class _TransactionsState extends State<Transactions> {
           TextField(
             controller: searchController,
             decoration: InputDecoration(
-              hintText: "Search by transaction ID, event name, or status...",
+              hintText: "Search by transaction ID, client name, invoice number, or visa type...",
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -183,7 +187,7 @@ class _TransactionsState extends State<Transactions> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  items: ["All", "PENDING", "COMPLETED", "FAILED"]
+                  items: ["All", "PENDING", "COMPLETED", "FAILED", "PROCESSING"]
                       .map((status) => DropdownMenuItem(
                     value: status,
                     child: Text(status),
@@ -200,22 +204,22 @@ class _TransactionsState extends State<Transactions> {
               const SizedBox(width: 16),
               Expanded(
                 child: DropdownButtonFormField<String>(
-                  value: selectedPaymentStatus,
+                  value: selectedPaymentMethod,
                   decoration: InputDecoration(
-                    labelText: "Payment Status",
+                    labelText: "Payment Method",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  items: ["All", "paid", "unpaid"]
-                      .map((status) => DropdownMenuItem(
-                    value: status,
-                    child: Text(status.toUpperCase()),
+                  items: ["All", "credit_card", "bank_transfer", "paypal", "stripe"]
+                      .map((method) => DropdownMenuItem(
+                    value: method,
+                    child: Text(method.replaceAll('_', ' ').toUpperCase()),
                   ))
                       .toList(),
                   onChanged: (value) {
                     setState(() {
-                      selectedPaymentStatus = value!;
+                      selectedPaymentMethod = value!;
                     });
                     _filterTransactions();
                   },
@@ -281,7 +285,7 @@ class _TransactionsState extends State<Transactions> {
                     children: [
                       Expanded(
                         child: Text(
-                          transaction.ticketId?.title ?? "Unknown Event",
+                          transaction.clientFullName,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
@@ -289,15 +293,25 @@ class _TransactionsState extends State<Transactions> {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      _buildStatusChip(transaction.paymentStatus),
+                      _buildStatusChip(transaction.status),
                     ],
                   ),
+                  const SizedBox(height: 4),
+                  if (transaction.visaType.isNotEmpty)
+                    Text(
+                      transaction.visaType,
+                      style: TextStyle(
+                        color: Colors.blue[600],
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
                   const SizedBox(height: 4),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        "\$${transaction.amount.toStringAsFixed(2)}",
+                        "${transaction.currency.toUpperCase()} ${transaction.amount.toStringAsFixed(2)}",
                         style: const TextStyle(
                           color: Colors.green,
                           fontWeight: FontWeight.bold,
@@ -315,7 +329,7 @@ class _TransactionsState extends State<Transactions> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    "ID: ${transaction.transactionId.substring(0, 16)}...",
+                    "Invoice: ${transaction.invoiceNumber}",
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 11,
@@ -331,41 +345,22 @@ class _TransactionsState extends State<Transactions> {
   }
 
   Widget _buildTransactionAvatar(Transaction transaction) {
-    if (transaction.ticketId?.image.isNotEmpty ?? false) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Image.network(
-          transaction.ticketId!.image,
-          width: 52,
-          height: 52,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return _buildInitialsAvatar(transaction);
-          },
-        ),
-      );
-    } else {
-      return _buildInitialsAvatar(transaction);
-    }
-  }
-
-  Widget _buildInitialsAvatar(Transaction transaction) {
-    String initial = transaction.ticketId?.title.isNotEmpty ?? false
-        ? transaction.ticketId!.title[0]
-        : 'T';
+    String initial = transaction.clientFullName.isNotEmpty
+        ? transaction.clientFullName[0]
+        : 'C';
 
     return Container(
       width: 52,
       height: 52,
       decoration: BoxDecoration(
-        color: _getStatusColor(transaction.paymentStatus).withOpacity(0.2),
+        color: _getStatusColor(transaction.status).withOpacity(0.2),
         borderRadius: BorderRadius.circular(20),
       ),
       alignment: Alignment.center,
       child: Text(
         initial,
         style: TextStyle(
-          color: _getStatusColor(transaction.paymentStatus),
+          color: _getStatusColor(transaction.status),
           fontWeight: FontWeight.bold,
           fontSize: 16,
         ),
@@ -394,12 +389,11 @@ class _TransactionsState extends State<Transactions> {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'paid':
       case 'completed':
         return Colors.green;
       case 'pending':
+      case 'processing':
         return Colors.orange;
-      case 'unpaid':
       case 'failed':
         return Colors.red;
       default:

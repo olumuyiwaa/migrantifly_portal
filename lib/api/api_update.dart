@@ -3,86 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'package:mime/mime.dart';
-
-import '../models/pricing_options.dart';
 import 'api_helper.dart';
 
 
-Future<void> updateEventWithBytes({
-  required BuildContext context,
-  required String eventID,
-  required String title,
-  required String paypalUsername,
-  required String location,
-  required String price,
-  required String category,
-  required String date,
-  required String time,
-  required String address,
-  required String description,
-  required String latitude,
-  required String longitude,
-  required String unit,
-  required http.MultipartFile? imageFile,
-  required List<PricingOption> pricingOptions,
-}) async {
-  var headers = await getHeaders();
-
-  // Create multipart request
-  var request = http.MultipartRequest('PATCH', Uri.parse('$baseUrl/events/$eventID'))
-    ..headers.addAll(headers)
-    ..fields['title'] = title
-    ..fields['paypalUsername'] = paypalUsername
-    ..fields['location'] = location
-    ..fields['price'] = price
-    ..fields['category'] = category
-    ..fields['date'] = date
-    ..fields['time'] = time
-    ..fields['address'] = address
-    ..fields['description'] = description
-    ..fields['latitude'] = latitude
-    ..fields['longitude'] = longitude
-    ..fields['unit'] = unit
-    ..fields['pricingOptions'] = jsonEncode(pricingOptions.map((e) => e.toJson()).toList());
-
-  // Add image file if provided
-  if (imageFile != null) {
-    request.files.add(imageFile);
-  }
-
-  // Send the request
-  final response = await request.send();
-
-  // Handle the response
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text(
-          'Event updated successfully!',
-          textAlign: TextAlign.center,
-        ),
-        backgroundColor: Colors.green,
-      ));
-    }
-  } else {
-    final responseData = await http.Response.fromStream(response);
-    final String errorMessage =
-        json.decode(responseData.body)['message'] ?? 'Event update failed';
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          errorMessage,
-          textAlign: TextAlign.center,
-        ),
-        backgroundColor: Colors.red,
-      ));
-    }
-    throw Exception(errorMessage);
-  }
-}
 
 Future<void> updateCountry({
   required BuildContext context,

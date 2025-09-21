@@ -10,11 +10,11 @@ import '../../models/class_users.dart';
 import '../../responsive.dart';
 import '../dashboard/administration.dart';
 import '../dashboard/calender.dart';
-import '../dashboard/countries.dart';
+import '../dashboard/documents.dart';
 import '../dashboard/dashboard_screen.dart';
-import '../dashboard/market.dart';
+import '../dashboard/consultations.dart';
 import '../dashboard/people.dart';
-import '../dashboard/events.dart';
+import '../dashboard/applications.dart';
 import '../dashboard/transactions.dart';
 import '../dashboard/user_details.dart';
 
@@ -85,16 +85,8 @@ class _ActiveSessionState extends State<ActiveSession> {
       ),
       Events(),
       Calendar(),
-      Market(),
-      Countries(
-        onItemTapped: (int index) => setState(() => _pageIndex = index),
-        onTitleTapped: (String title) => setState(() => _currentTitle = title),
-        onItemUser: (User value) => goToUserDetails(
-          fromIndex: 5,
-          fromTitle: "Countries",
-          selectedUser: value,
-        ),
-      ),
+      Consultations(),
+      DocumentsWidget(),
       Administration(),
       UserDetails(
         user: user,

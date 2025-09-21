@@ -42,28 +42,22 @@ class _FilterWidgetState extends State<FilterWidget> {
 
   void _initializePractices() {
     practices = {
-      'Customers': FilterItem(
-        label: 'Customers',
-        role: 'user', // Map to actual user role
-        count: widget.users.where((user) => user.role == "user").length,
+      'Client': FilterItem(
+        label: 'Client',
+        role: 'client', // Map to actual user role
+        count: widget.users.where((user) => user.role == "client").length,
         isSelected: false,
       ),
-      'Association Leaders': FilterItem(
-        label: 'Association Leaders',
-        role: 'ambassador', // Map to actual user role
-        count: widget.users.where((user) => user.role == "ambassador").length,
+      'Adviser': FilterItem(
+        label: 'Adviser',
+        role: 'adviser', // Map to actual user role
+        count: widget.users.where((user) => user.role == "adviser").length,
         isSelected: false,
       ),
-      'Entities/Group': FilterItem(
-        label: 'Entities/Group',
-        role: 'artist', // Map to actual user role
-        count: widget.users.where((user) => user.role == "artist").length,
-        isSelected: false,
-      ),
-      'Sub Admin': FilterItem(
-        label: 'Sub Admin',
-        role: 'sub_admin', // Map to actual user role
-        count: widget.users.where((user) => user.role == "sub_admin").length,
+      'Admin': FilterItem(
+        label: 'Admin',
+        role: 'admin', // Map to actual user role
+        count: widget.users.where((user) => user.role == "admin").length,
         isSelected: false,
       ),
     };

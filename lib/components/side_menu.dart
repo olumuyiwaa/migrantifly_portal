@@ -45,8 +45,7 @@ class SideMenu extends StatelessWidget {
                         fit: BoxFit.cover,
                         width: double.infinity,
                         height: double.infinity,
-                        placeholder: (context, url) =>
-                            Image.asset("assets/images/logo.png"),
+                        placeholder: (context, url) =>Icon(Icons.person_rounded, size: 100),
                         errorWidget: (context, url, error) =>
                         const Icon(Icons.person_rounded, size: 100),
                       ),),
@@ -71,7 +70,7 @@ class SideMenu extends StatelessWidget {
                 ),
                 DrawerListTile(
                   title: "Applications",
-                  svgSrc: "assets/icons/events.svg",
+                  svgSrc: "assets/icons/applications.svg",
                   press: () {
                     onItemTapped(2);
                     onTitleTapped("Applications");
@@ -87,20 +86,20 @@ class SideMenu extends StatelessWidget {
                     },
                     isActive: pageIndex == 3,
                   ),DrawerListTile(
-                  title: "Market",
-                  svgSrc: "assets/icons/market.svg",
+                  title: "Consultations",
+                  svgSrc: "assets/icons/consultations.svg",
                   press: () {
                     onItemTapped(4);
-                    onTitleTapped("Market");
+                    onTitleTapped("Consultations");
                   },
                   isActive: pageIndex == 4,
                 ),
                 DrawerListTile(
-                  title: "Countries",
-                  svgSrc: "assets/icons/countries.svg",
+                  title: "Documents",
+                  svgSrc: "assets/icons/documents.svg",
                   press: () {
                     onItemTapped(5);
-                    onTitleTapped("Countries");
+                    onTitleTapped("Documents");
                   },
                   isActive: pageIndex == 5,
                 ),
@@ -155,10 +154,12 @@ class SideMenu extends StatelessWidget {
                       child: Row(
                         spacing: 8,
                         children: [
-                          Image.asset(
-                            "assets/images/logo.png",
-                            height: 52,
-                          ),
+                         Container(
+                           padding:EdgeInsets.all(12),
+                           child:  Image.asset(
+                           "assets/images/logo.png",
+                           height: 42,
+                         ),),
                           Column(crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(

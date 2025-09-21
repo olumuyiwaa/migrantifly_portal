@@ -116,12 +116,21 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildSection('Application Details', [
+                    Row(spacing: defaultPadding,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Expanded(child:_buildSection('Application Details', [
                         _buildDetailItem(Icons.description, 'Visa Type', _nonEmpty(app.visaType)),
                         _buildDetailItem(Icons.flag, 'Stage', _nonEmpty(app.stage)),
                         _buildDetailItem(Icons.trending_up, 'Progress', "${app.progress}%"),
                         _buildDetailItem(Icons.confirmation_number, 'Consultation ID', _nonEmpty(app.consultationId)),
-                      ]),
+                      ])),
+                      Expanded(child:_buildSection('Adviser', [
+                        _buildDetailItem(Icons.person_outline, 'Name', _nonEmpty(app.adviser.fullName)),
+                        _buildDetailItem(Icons.email_outlined, 'Email', _nonEmpty(app.adviser.email)),
+                        _buildDetailItem(Icons.phone_outlined, 'Phone', _nonEmpty(app.adviser.phoneNumber)),
+                        _buildDetailItem(Icons.location_on, 'Location', _nonEmpty(app.adviser.countryLocated)),
+                      ])),]),
                     const Divider(height: 30),
                     _buildSection('Key Dates', [
                       _buildDetailItem(Icons.calendar_today, 'Created', _fmt(app.createdAt)),
@@ -151,29 +160,9 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
                           child: _buildAvatarOrImage(app.client.image),
                         ),
                       ),]),
-                    const Divider(height: 30),
-                    Row(children: [ Expanded(child:_buildSection('Adviser', [
-                      _buildDetailItem(Icons.person_outline, 'Name', _nonEmpty(app.adviser.fullName)),
-                      _buildDetailItem(Icons.email_outlined, 'Email', _nonEmpty(app.adviser.email)),
-                      _buildDetailItem(Icons.phone_outlined, 'Phone', _nonEmpty(app.adviser.phoneNumber)),
-                    ])),
-                    Container(
-                      width: 400,
-                      decoration: BoxDecoration(
-                        color: Colors.blueGrey,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      margin: EdgeInsets.only(left: defaultPadding),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: _buildAvatarOrImage(app.adviser.image),
-                      ),
-                    ),]),
                   ],
                 ),
-              ),
-              SizedBox(height: defaultPadding),
-              _buildFooter(context),
+              )
             ],
           ),
         ),
@@ -184,10 +173,10 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
   Widget _buildAvatarOrImage(String img) {
     // Prefer image if available; otherwise show an icon placeholder.
     if (img.isNotEmpty) {
-      return Image.network(img, height: 400, width: double.infinity, fit: BoxFit.cover);
+      return Image.network(img, height: 372, width: double.infinity, fit: BoxFit.cover);
     }
     return Container(
-      height: 340,
+      height: 372,
       width: double.infinity,
       color: Colors.blueGrey.shade100,
       child: const Icon(Icons.person, size: 96, color: Colors.white70),
@@ -251,8 +240,68 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
             ],
           ),
           const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8,vertical: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  icon: const Icon(
+                    Icons.delete,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    'Delete',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showDeleteEventFormModal(context, widget.event);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  icon: const Icon(
+                    Icons.edit,
+                    color: Colors.blue,
+                  ),
+                  label: const Text('Edit'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _showEditEventFormModal(context, widget.event);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
           IconButton(
             icon: const Icon(Icons.close),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              padding: const EdgeInsets.all(12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -333,61 +382,6 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFooter(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          OutlinedButton.icon(
-            icon: const Icon(
-              Icons.delete,
-              color: Colors.white,
-            ),
-            label: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.white),
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              _showDeleteEventFormModal(context, widget.event);
-            },
-            style: OutlinedButton.styleFrom(
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton.icon(
-            icon: const Icon(
-              Icons.edit,
-              color: Colors.blue,
-            ),
-            label: const Text('Edit'),
-            onPressed: () {
-              Navigator.pop(context);
-              _showEditEventFormModal(context, widget.event);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
             ),
           ),
         ],

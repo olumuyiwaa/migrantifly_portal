@@ -2,20 +2,51 @@ import 'dart:convert';
 
 // import 'package:geocoding/geocoding.dart';
 // import 'package:geolocator/geolocator.dart';
+import 'package:Migrantifly/models/class_documents.dart';
+import 'package:Migrantifly/models/class_notifications.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/class_business.dart';
-import '../models/class_buyers.dart';
-import '../models/class_countries.dart';
-import '../models/class_event_locations.dart';
+import '../models/class_consultation.dart';
 import '../models/class_applications.dart';
-import '../models/class_tickets.dart';
 import '../models/class_transactions.dart';
 import '../models/class_users.dart';
+import '../models/dashboard_stats.dart';
 import 'api_helper.dart';
+
+Future<DashboardStats> getDashboardStats() async {
+  final headers = await getHeaders();
+  final response = await http.get(
+    Uri.parse('$baseUrl/admin/dashboard'),
+    headers: headers,
+  );
+
+  if (response.statusCode == 200) {
+    final stats = DashboardStats.fromResponse(json.decode(response.body));
+    await cacheDashboardStats(stats);
+    return stats;
+  } else {
+    throw Exception('Failed to load Dashboard Stats: ${response.statusCode}');
+  }
+}
+
+Future<void> cacheDashboardStats(DashboardStats stats) async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = json.encode(stats.toJson());
+  await prefs.setString("dashboard_stats", jsonString);
+}
+
+Future<DashboardStats?> loadCachedDashboardStats() async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString("dashboard_stats");
+  if (jsonString != null) {
+    final Map<String, dynamic> decoded = json.decode(jsonString);
+    return DashboardStats.fromJson(decoded);
+  }
+  return null;
+}
 
 Future<List<User>> fetchUsers() async {
   final headers = await getHeaders();
@@ -67,6 +98,161 @@ Future<List<User>> loadCachedUsers() async {
   return data.map((item) => User.fromJson(jsonDecode(item))).toList();
 }
 
+Future<List<Document>> fetchDocuments() async {
+  final headers = await getHeaders();
+  int page = 1;
+  const int limit = 20;
+  final List<Document> allDocuments = [];
+
+  while (true) {
+    final uri = Uri.parse('$baseUrl/documents').replace(queryParameters: {
+      'page': '$page',
+      'limit': '$limit',
+    });
+
+    final response = await http.get(uri, headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List<dynamic> rows = data['data']['documents'];
+
+      final documents = rows.map((e) => Document.fromJson(e)).toList();
+      allDocuments.addAll(documents);
+
+      if (documents.length < limit) {
+        // We've reached the last page
+        break;
+      }
+
+      page++; // ✅ increment page number
+    } else {
+      throw Exception('Failed to load documents: ${response.body}');
+    }
+  }
+
+  return allDocuments;
+}
+
+
+//store Documents
+Future<void> cacheDocuments(List<Document> documents) async {
+  final prefs = await SharedPreferences.getInstance();
+  final encoded = documents.map((r) => jsonEncode(r.toJson())).toList();
+  await prefs.setStringList('cached_documents', encoded);
+}
+
+Future<List<Document>> loadCachedDocuments() async {
+  final prefs = await SharedPreferences.getInstance();
+  final data = prefs.getStringList('cached_documents');
+  if (data == null) return [];
+  return data.map((item) => Document.fromJson(jsonDecode(item))).toList();
+}
+
+
+
+//--------------------
+
+
+Future<List<NotificationModel>> fetchNotifications() async {
+  final headers = await getHeaders();
+  int page = 1;
+  const int limit = 20;
+  final List<NotificationModel> allNotifications = [];
+
+  while (true) {
+    final uri = Uri.parse('$baseUrl/notifications').replace(queryParameters: {
+      'page': '$page',
+      'limit': '$limit',
+    });
+
+    final response = await http.get(uri, headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List<dynamic> rows = data['data']['notifications'];
+
+      final notifications = rows.map((e) => NotificationModel.fromJson(e)).toList();
+      allNotifications.addAll(notifications);
+
+      if (notifications.length < limit) {
+        // We've reached the last page
+        break;
+      }
+
+      page++; // ✅ increment page number
+    } else {
+      throw Exception('Failed to load notifications: ${response.body}');
+    }
+  }
+
+  return allNotifications;
+}
+
+
+//store Notifications
+Future<void> cacheNotifications(List<NotificationModel> notifications) async {
+  final prefs = await SharedPreferences.getInstance();
+  final encoded = notifications.map((r) => jsonEncode(r.toJson())).toList();
+  await prefs.setStringList('cached_notifications', encoded);
+}
+
+Future<List<NotificationModel>> loadCachedNotifications() async {
+  final prefs = await SharedPreferences.getInstance();
+  final data = prefs.getStringList('cached_notifications');
+  if (data == null) return [];
+  return data.map((item) => NotificationModel.fromJson(jsonDecode(item))).toList();
+}
+
+Future<List<Consultation>> fetchConsultations() async {
+  final headers = await getHeaders();
+  int page = 1;
+  const int limit = 20;
+  final List<Consultation> allConsultations = [];
+
+  while (true) {
+    final uri = Uri.parse('$baseUrl/consultation').replace(queryParameters: {
+      'page': '$page',
+      'limit': '$limit',
+    });
+
+    final response = await http.get(uri, headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List<dynamic> rows = data['data']['consultations'];
+
+      final consultations = rows.map((e) => Consultation.fromJson(e)).toList();
+      allConsultations.addAll(consultations);
+
+      if (consultations.length < limit) {
+        // We've reached the last page
+        break;
+      }
+
+      page++; // ✅ increment page number
+    } else {
+      throw Exception('Failed to load consultations: ${response.body} $uri');
+    }
+  }
+
+  return allConsultations;
+}
+
+
+//store users
+Future<void> cacheConsultations(List<Consultation> consultations) async {
+  final prefs = await SharedPreferences.getInstance();
+  final encoded = consultations.map((r) => jsonEncode(r.toJson())).toList();
+  await prefs.setStringList('cached_consultations', encoded);
+}
+
+Future<List<Consultation>> loadCachedConsultations() async {
+  final prefs = await SharedPreferences.getInstance();
+  final data = prefs.getStringList('cached_consultations');
+  if (data == null) return [];
+  return data.map((item) => Consultation.fromJson(jsonDecode(item))).toList();
+}
+
 
 //Application
 Future<List<Application>> getFeaturedEvents() async {
@@ -105,7 +291,7 @@ Future<List<Application>> getFeaturedEvents() async {
 }
 
 
-//store events
+//store application
 Future<void> cacheEvents(List<Application> events) async {
   final prefs = await SharedPreferences.getInstance();
   final encoded = events.map((r) => jsonEncode(r.toJson())).toList();
@@ -117,111 +303,6 @@ Future<List<Application>> loadCachedEvents() async {
   final data = prefs.getStringList('cached_applications');
   if (data == null) return [];
   return data.map((item) => Application.fromJson(jsonDecode(item))).toList();
-}
-
-Future<List<EventLocation>> getEventLocations() async {
-
-  final headers = await getHeaders(); // Ensure you implement getHeaders
-  final response = await http.get(
-    Uri.parse('$baseUrl/events/featured'),
-    headers: headers,
-  );
-
-  if (response.statusCode == 200) {
-    final List<dynamic> jsonData = json.decode(response.body);
-
-    // Map event name and location
-    final List<EventLocation> locations = jsonData.map((json) {
-      return EventLocation(
-        name: json['title'],
-        date: json['date'],
-        location: LatLng(json['latitude'], json['longitude']),
-      );
-    }).toList();
-
-    return locations;
-  } else {
-    throw Exception('Failed to load event locations: ${response.statusCode}');
-  }
-}
-
-
-Future<Application> getEventDetails(String eventID) async {
-  final headers = await getHeaders();
-  final response = await http.get(
-    Uri.parse('$baseUrl/events/$eventID'),
-    headers: headers,
-  );
-
-  if (response.statusCode == 200) {
-    return Application.fromJson(json.decode(response.body));
-  } else {
-    throw Exception('Failed to load Event Details: ${response.statusCode}');
-  }
-}
-
-Future<List<Country>> getCountries() async {
-  final headers = await getHeaders();
-  final response = await http.get(
-    Uri.parse('$baseUrl/country/countries'),
-    headers: headers,
-  );
-
-  if (response.statusCode == 200) {
-    final List<dynamic> jsonData = json.decode(response.body);
-    return jsonData.map((json) => Country.fromJson(json)).toList();
-  } else {
-    throw Exception('Failed to load Countries: ${response.statusCode}');
-  }
-}
-
-Future<Country> getCountryDetails(String countryID) async {
-  final headers = await getHeaders();
-  final response = await http.get(
-    Uri.parse('$baseUrl/country/countries/$countryID'),
-    headers: headers,
-  );
-
-  if (response.statusCode == 200) {
-    return Country.fromJson(json.decode(response.body));
-  } else {
-    throw Exception('Failed to load Country Details: ${response.statusCode}');
-  }
-}
-
-Future<List<Ticket>> fetchTickets() async {
-  final headers = await getHeaders();
-  final response = await http.get(
-    Uri.parse('$baseUrl/paypal/payment-history'),
-    headers: headers,
-  );
-
-  if (response.statusCode == 200) {
-    List<dynamic> jsonData = json.decode(response.body);
-    return jsonData
-        .map((json) => Ticket.fromJson(json))
-        .where((ticket) => ticket.status.toLowerCase() == "paid")
-        .toList();
-  } else {
-    throw Exception('Failed to load tickets: ${response.reasonPhrase}');
-  }
-}
-
-Future<TicketsSales> fetchTicketsSales(String eventID) async {
-  final headers = await getHeaders();
-  final response = await http.get(
-    Uri.parse('$baseUrl/events/$eventID/buyers'),
-    headers: headers,
-  );
-
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> jsonData = json.decode(response.body);
-    return TicketsSales.fromJson(jsonData);
-  } else {
-    final Map<String, dynamic> jsonData = json.decode(response.body);
-
-    return jsonData['message'];
-  }
 }
 
 Future<List<dynamic>> fetchMessages(String eventID) async {
@@ -239,130 +320,26 @@ Future<List<dynamic>> fetchMessages(String eventID) async {
 }
 
 
-Future<List<Business>> fetchBusinesses() async {
-  final headers = await getHeaders();
-  final response = await http.get(
-    Uri.parse('$baseUrl/business'),
-    headers: headers,
-  );
-  if (response.statusCode == 200) {
-    final List<dynamic> jsonData =
-        json.decode(response.body); // Decode as a list
-    return jsonData.map((e) => Business.fromJson(e)).toList();
-  } else {
-    throw Exception('Failed to load Business');
-  }
-}
-
-Future<Business> getBusinessDetails(String businessID) async {
-  final headers = await getHeaders();
-  final response = await http.get(
-    Uri.parse('$baseUrl/business/$businessID'),
-    headers: headers,
-  );
-
-  if (response.statusCode == 200) {
-    return Business.fromJson(json.decode(response.body));
-  } else {
-    throw Exception('Failed to load Business Details: ${response.statusCode}');
-  }
-}
-
-//store countries
-Future<void> cacheCountries(List<Country> countries) async {
-  final prefs = await SharedPreferences.getInstance();
-  final encoded = countries.map((r) => jsonEncode(r.toJson())).toList();
-  await prefs.setStringList('cached_countries', encoded);
-}
-
-Future<List<Country>> loadCachedCountries() async {
-  final prefs = await SharedPreferences.getInstance();
-  final data = prefs.getStringList('cached_countries');
-  if (data == null) return [];
-  return data.map((item) => Country.fromJson(jsonDecode(item))).toList();
-}
-
-//store businesses
-Future<void> cacheBusinesses(List<Business> businesses) async {
-  final prefs = await SharedPreferences.getInstance();
-  final encoded = businesses.map((r) => jsonEncode(r.toJson())).toList();
-  await prefs.setStringList('cached_businesses', encoded);
-}
-
-Future<List<Business>> loadCachedBusinesses() async {
-  final prefs = await SharedPreferences.getInstance();
-  final data = prefs.getStringList('cached_businesses');
-  if (data == null) return [];
-  return data.map((item) => Business.fromJson(jsonDecode(item))).toList();
-}
-
-
 // -----transactions
 
 
 class TransactionApi {
-  static const String baseUrl = 'https://afrohub.onrender.com/api';
-
-  static Future<String?> _getToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return prefs.getString('token');
-  }
-
   static Future<List<Transaction>> fetchTransactions() async {
     try {
-      final token = await _getToken();
-      if (token == null) {
-        throw Exception('No authentication token found');
-      }
-
-      final headers = {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Cookie': 'token=$token',
-      };
-
+      final headers = await getHeaders();
       final response = await http.get(
-        Uri.parse('$baseUrl/stripe/admin/transactions'),
+        Uri.parse('$baseUrl/payments/history'),
         headers: headers,
       );
 
       if (response.statusCode == 200) {
-        final List<dynamic> jsonData = json.decode(response.body);
+        final List<dynamic> jsonData = json.decode(response.body)["data"];
         return jsonData.map((json) => Transaction.fromJson(json)).toList();
       } else {
         throw Exception('Failed to load transactions: ${response.reasonPhrase}');
       }
     } catch (e) {
       throw Exception('Error fetching transactions: $e');
-    }
-  }
-
-  static Future<Transaction?> fetchTransactionById(String transactionId) async {
-    try {
-      final token = await _getToken();
-      if (token == null) {
-        throw Exception('No authentication token found');
-      }
-
-      final headers = {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        'Cookie': 'token=$token',
-      };
-
-      final response = await http.get(
-        Uri.parse('$baseUrl/stripe/admin/transactions/$transactionId'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonData = json.decode(response.body);
-        return Transaction.fromJson(jsonData);
-      } else {
-        throw Exception('Failed to load transaction: ${response.reasonPhrase}');
-      }
-    } catch (e) {
-      throw Exception('Error fetching transaction: $e');
     }
   }
 }
