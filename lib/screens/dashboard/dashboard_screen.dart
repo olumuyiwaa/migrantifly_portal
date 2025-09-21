@@ -134,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     widget.onTitleTapped(title);
                   }, stats: dashboardStats,
                 ),
-                SizedBox(height: defaultPadding),
+                SizedBox(height: 12),
                 // The charts
                 StatsCharts(stats: dashboardStats),
                 SizedBox(height: defaultPadding),

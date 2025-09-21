@@ -1,28 +1,28 @@
 // dart
+import 'package:Migrantifly/models/class_documents.dart';
 import 'package:flutter/material.dart';
 
 import '../api/api_delete.dart';
+import '../api/api_get.dart';
 import '../constants.dart';
 import '../models/class_applications.dart';
 import '../models/class_users.dart';
-// EventDetailsForm likely targets Event; disable edit for now or swap to your Application form if available.
-// import 'forms/event_details_form.dart';
 
-class EventDetailsPreviewModal extends StatefulWidget {
-  final Application event;
+class ApplicationDetailsPreviewModal extends StatefulWidget {
+  final Application application;
 
-  const EventDetailsPreviewModal({
+  const ApplicationDetailsPreviewModal({
     super.key,
-    required this.event,
+    required this.application,
   });
 
   @override
-  State<EventDetailsPreviewModal> createState() =>
-      _EventDetailsPreviewModalState();
+  State<ApplicationDetailsPreviewModal> createState() =>
+      _ApplicationDetailsPreviewModalState();
 }
 
-void _showEditEventFormModal(BuildContext context, Application event) {
-  // TODO: Replace with your Application edit form when ready.
+void _showEditApplicationFormModal(BuildContext context, Application application) {
+  // TODO: Replace with Application edit form when ready.
   // Keeping a placeholder dialog to avoid runtime issues.
   showDialog(
     context: context,
@@ -38,12 +38,12 @@ void _showEditEventFormModal(BuildContext context, Application event) {
   );
 }
 
-Future<void> _showDeleteEventFormModal(BuildContext context, Application event) {
+Future<void> _showDeleteApplicationFormModal(BuildContext context, Application application) {
   return showDialog<void>(
     context: context,
     barrierDismissible: false,
     builder: (BuildContext context) {
-      final titleLine = "${event.clientDisplayName} • ${event.displayVisaTypeTitle}";
+      final titleLine = "${application.clientDisplayName} • ${application.displayVisaTypeTitle}";
       return AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         title: Text("Delete: $titleLine"),
@@ -66,10 +66,10 @@ Future<void> _showDeleteEventFormModal(BuildContext context, Application event) 
             onPressed: () {
               // TODO: Implement removeApplication API. The current call targets events.
               // Example:
-              // removeApplication(context: context, applicationID: event.id);
-              removeEvent( // keep existing call if your API is still named this way
+              // removeApplication(context: context, applicationID: application.id);
+              removeApplication(
                 context: context,
-                eventID: event.id,
+                applicationID: application.id,
               );
             },
           ),
@@ -79,15 +79,39 @@ Future<void> _showDeleteEventFormModal(BuildContext context, Application event) 
   );
 }
 
-class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
+class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPreviewModal> {
   List<User> selectedStaffs = [];
   List<User> filteredStaffs = [];
+  List<Document> documents = [];
   bool _isSearching = false;
+  bool _isLoadingDocuments = false;
   TextEditingController staffInputController = TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _loadDocuments();
+  }
+
+  Future<void> _loadDocuments() async {
+    if (mounted) setState(() => _isLoadingDocuments = true);
+    try {
+      // Load cached data first
+      documents = await fetchApplicationDocuments(widget.application.id);
+      if (mounted && documents.isNotEmpty) {
+        setState(() {});
+        setState(() => _isLoadingDocuments = false);
+      }
+    } catch (e) {
+      debugPrint('Error fetching documents: $e');
+      if (mounted) {
+        setState(() => _isLoadingDocuments = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final app = widget.event;
+    final app = widget.application;
     return Container(
       width: MediaQuery.of(context).size.width * 0.85,
       padding: const EdgeInsets.all(20),
@@ -160,6 +184,28 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
                           child: _buildAvatarOrImage(app.client.image),
                         ),
                       ),]),
+                    if (documents.isNotEmpty)
+                      Column(children: [
+                        const Divider(height: 30),
+                        Text(
+                          "Documents",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(height: 80,child: ListView.builder(
+                          padding: EdgeInsets.all(12),
+                          itemCount: documents.length,
+                          shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (BuildContext context, int index) {
+                            final document = documents[index];
+                            return _buildDetailItem(Icons.file_open, 'Document', _nonEmpty(document.name));
+                          },
+                        ),)])
                   ],
                 ),
               )
@@ -260,7 +306,7 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
                   ),
                   onPressed: () {
                     Navigator.pop(context);
-                    _showDeleteEventFormModal(context, widget.event);
+                    _showDeleteApplicationFormModal(context, widget.application);
                   },
                   style: OutlinedButton.styleFrom(
                     backgroundColor: Colors.red,
@@ -279,7 +325,7 @@ class _EventDetailsPreviewModalState extends State<EventDetailsPreviewModal> {
                   label: const Text('Edit'),
                   onPressed: () {
                     Navigator.pop(context);
-                    _showEditEventFormModal(context, widget.event);
+                    _showEditApplicationFormModal(context, widget.application);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,

@@ -50,15 +50,15 @@ Future<void> removeUser({
   }
 }
 
-Future<void> removeEvent({
+Future<void> removeApplication({
   required BuildContext context,
-  required String eventID,
+  required String applicationID,
 }) async {
   var headers = await getHeaders();
 
   // Create multipart request
   var request =
-      http.Request('DELETE', Uri.parse('$baseUrl/events/$eventID/delete'))
+      http.Request('DELETE', Uri.parse('$baseUrl/events/$applicationID/delete'))
         ..headers.addAll(headers);
   final response = await request.send();
 

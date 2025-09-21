@@ -46,6 +46,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
   List<Consultation> relatedApplications = [];
   List<Consultation> allApplications = [];
   List<User> fetchedUsers = [];
+  List<User> users = [];
   bool _isLoading = true;
   String userID = "";
 
@@ -58,14 +59,40 @@ class _ConsultationPageState extends State<ConsultationPage> {
           child: Container(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.9,
-            // child: ConsultationDetailsForm(
-            //   consultation: consultation,
-            //   isEditing: true,
-            //   onSave: () {
-            //     widget.onChange();
-            //     _fetchConsultationDetails();
-            //   },
-            // ),
+            child: Column(
+              children: [
+                AppBar(
+                  title: const Text('Edit Consultation'),
+                  automaticallyImplyLeading: false,
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Close'),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        const Text('Consultation edit form would go here'),
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Handle save logic here
+                            widget.onChange();
+                            _fetchConsultationDetails();
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Save Changes'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -73,15 +100,31 @@ class _ConsultationPageState extends State<ConsultationPage> {
   }
 
   Future<void> _fetchConsultationDetails() async {
+    if (!mounted) return;
+
     setState(() => _isLoading = true);
+
     try {
       final consultation = widget.consultation;
-      final users = await fetchUsers();
 
-      if (consultation == null) {
-        debugPrint("Consultation details are null");
-        setState(() => _isLoading = false);
-        return;
+      // Load users with better error handling
+      try {
+        users = await loadCachedUsers();
+        if (mounted && users.isNotEmpty) {
+          setState(() {});
+        }
+
+        final freshUsers = await fetchUsers();
+        await cacheUsers(freshUsers);
+
+        if (mounted) {
+          setState(() {
+            users = freshUsers;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error loading users: $e');
+        // Continue with existing users if any
       }
 
       // Fetch related applications
@@ -91,38 +134,42 @@ class _ConsultationPageState extends State<ConsultationPage> {
       }).toList();
 
       // Update state safely
-      setState(() {
-        consultationDetails = consultation;
-        fetchedUsers = users;
-        consultationType = consultation.type;
-        consultationNotes = consultation.notes;
-        consultationMethod = consultation.method;
-        consultationStatus = consultation.status;
-        consultationDuration = consultation.duration;
-        scheduledDate = consultation.scheduledDate;
-        visaPathways = consultation.visaPathways;
-        clientToken = consultation.clientToken;
+      if (mounted) {
+        setState(() {
+          consultationDetails = consultation;
+          fetchedUsers = users;
+          consultationType = consultation.type;
+          consultationNotes = consultation.notes;
+          consultationMethod = consultation.method;
+          consultationStatus = consultation.status;
+          consultationDuration = consultation.duration;
+          scheduledDate = consultation.scheduledDate;
+          visaPathways = consultation.visaPathways;
+          clientToken = consultation.clientToken;
 
-        // Client details
-        clientName = consultation.client.fullName;
-        clientEmail = consultation.client.email;
-        clientPhone = consultation.client.phoneNumber;
-        clientPhoto = consultation.client.image;
+          // Client details
+          clientName = consultation.client.fullName;
+          clientEmail = consultation.client.email;
+          clientPhone = consultation.client.phoneNumber;
+          clientPhoto = consultation.client.image;
 
-        // Adviser details
-        adviserName = consultation.adviser.fullName;
-        adviserEmail = consultation.adviser.email;
-        adviserPhone = consultation.adviser.phoneNumber;
-        adviserPhoto = consultation.adviser.image;
+          // Adviser details
+          adviserName = consultation.adviser.fullName;
+          adviserEmail = consultation.adviser.email;
+          adviserPhone = consultation.adviser.phoneNumber;
+          adviserPhoto = consultation.adviser.image;
 
-        allApplications = clientRelated;
-        relatedApplications = allApplications;
+          allApplications = clientRelated;
+          relatedApplications = allApplications;
 
-        _isLoading = false;
-      });
+          _isLoading = false;
+        });
+      }
     } catch (error) {
       debugPrint("Error fetching consultation details: $error");
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -141,10 +188,16 @@ class _ConsultationPageState extends State<ConsultationPage> {
   }
 
   Future<void> getUserInfo() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userID = prefs.getString('id') ?? '';
-    });
+    try {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          userID = prefs.getString('id') ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint('Error getting user info: $e');
+    }
   }
 
   Color _getStatusColor(String status) {
@@ -162,6 +215,13 @@ class _ConsultationPageState extends State<ConsultationPage> {
     }
   }
 
+  Future<void> _retryLoading() async {
+    await _fetchConsultationDetails();
+    if (mounted) {
+      widget.onChange();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -173,21 +233,30 @@ class _ConsultationPageState extends State<ConsultationPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text("Consultation Not Found"),
-            InkWell(
-              onTap: () {
-                Navigator.pop(context);
-              },
-              child: Container(
-                margin: const EdgeInsets.only(top: 16),
-                decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(4)),
-                padding: const EdgeInsets.symmetric(
-                    vertical: 8, horizontal: 16),
-                child: Text("Try Again"),
+            const Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Consultation Not Found",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
               ),
-            )
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "There was an error loading the consultation details.",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _retryLoading,
+              child: const Text("Try Again"),
+            ),
           ],
         ),
       )
@@ -279,24 +348,27 @@ class ConsultationHeader extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      Text(
-                        consultationType.isNotEmpty ? consultationType : 'General Consultation',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.w400,
-                          fontFamily: 'Georgia',
+                      Flexible(
+                        child: Text(
+                          consultationType.isNotEmpty ? consultationType : 'General Consultation',
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w400,
+                            fontFamily: 'Georgia',
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: _getStatusColor(consultationStatus),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
                           consultationStatus.toUpperCase(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -308,11 +380,11 @@ class ConsultationHeader extends StatelessWidget {
                 ),
                 // Action button
                 if (!consultationStatus.toLowerCase().contains("complete"))
-                IconButton(
-                  onPressed: onEdit,
-                  icon: Icon(Icons.fact_check, color: Colors.green[600]),
-                  tooltip: "Complete",
-                ),
+                  IconButton(
+                    onPressed: onEdit,
+                    icon: Icon(Icons.fact_check, color: Colors.green[600]),
+                    tooltip: "Complete",
+                  ),
               ],
             ),
             const SizedBox(height: 8),
@@ -345,6 +417,7 @@ class ConsultationHeader extends StatelessWidget {
   }
 }
 
+// Keep the rest of the widget classes unchanged as they are well-implemented
 class ConsultationContent extends StatelessWidget {
   final String consultationType;
   final String consultationNotes;
@@ -549,9 +622,9 @@ class ConsultationInfoBox extends StatelessWidget {
               color: Colors.grey[100],
               borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
             ),
-            child: Text(
+            child: const Text(
               "Consultation Details",
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -654,16 +727,35 @@ class ConsultationPersonBox extends StatelessWidget {
             ),
           ),
 
-          // Photo
+          // Photo with error handling
           if (photo.isNotEmpty)
             Container(
               width: double.infinity,
               height: 120,
               decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage(photo),
-                  fit: BoxFit.cover,
-                ),
+                color: Colors.grey[200],
+              ),
+              child: Image.network(
+                photo,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Icon(
+                    Icons.person,
+                    size: 60,
+                    color: Colors.grey[400],
+                  );
+                },
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Center(
+                    child: CircularProgressIndicator(
+                      value: loadingProgress.expectedTotalBytes != null
+                          ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                          : null,
+                    ),
+                  );
+                },
               ),
             ),
 
@@ -724,7 +816,7 @@ class ConsultationApplicationsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ConsultationSection(
+        const ConsultationSection(
           title: "Related Applications",
           content: "Applications associated with this client:",
         ),

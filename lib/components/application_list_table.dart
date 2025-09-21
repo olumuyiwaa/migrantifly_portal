@@ -7,7 +7,7 @@ import '../constants.dart';
 import '../models/class_applications.dart';
 import '../models/class_users.dart';
 import '../responsive.dart';
-import 'event_details.dart'; // If unused, you can remove this import.
+import 'application_details.dart'; // If unused, you can remove this import.
 
 class ApplicationListTable extends StatefulWidget {
   final List<String> filter; // Filters applied to visaType (adjust if needed)
@@ -115,7 +115,7 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
           child: SizedBox(
             width: MediaQuery.of(context).size.width * 0.9,
             height: MediaQuery.of(context).size.height * 0.9,
-            child: EventDetailsPreviewModal(event: app),
+            child: ApplicationDetailsPreviewModal(application: app),
           ),
         );
       },
@@ -164,7 +164,7 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
               child: const Text("Delete", style: TextStyle(color: Colors.red)),
               onPressed: () async {
                 // TODO: replace with removeApplication(context: context, applicationID: app.id);
-                await removeEvent(context: context, eventID: app.id);
+                await removeApplication(context: context, applicationID: app.id);
                 if (context.mounted) {
                   Navigator.of(context).pop();
                 }

@@ -148,6 +148,25 @@ Future<List<Document>> loadCachedDocuments() async {
   return data.map((item) => Document.fromJson(jsonDecode(item))).toList();
 }
 
+Future<List<Document>> fetchApplicationDocuments(String applicationId) async {
+  try {
+    final headers = await getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/documents/application/$applicationId'),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final List<dynamic> jsonData = json.decode(response.body)["data"];
+      return jsonData.map((json) => Document.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load documents: ${response.reasonPhrase}');
+    }
+  } catch (e) {
+    throw Exception('Error fetching documents: $e');
+  }
+}
+
 
 
 //--------------------
@@ -178,8 +197,8 @@ Future<List<NotificationModel>> fetchNotifications() async {
         // We've reached the last page
         break;
       }
-
-      page++; // ✅ increment page number
+      debugPrint(allNotifications.toString());
+      page++;
     } else {
       throw Exception('Failed to load notifications: ${response.body}');
     }

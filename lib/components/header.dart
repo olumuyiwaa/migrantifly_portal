@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
+import '../api/api_get.dart';
 import '../constants.dart';
 import '../controllers/menu_app_controller.dart';
 import '../models/class_notifications.dart';
@@ -141,13 +142,42 @@ class _NotificationsDrawer extends StatefulWidget {
 }
 
 class _NotificationsDrawerState extends State<_NotificationsDrawer> {
+  List<NotificationModel> notifications = [];
+  bool isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllNotifications();
+  }
+
+  Future<void> _fetchAllNotifications() async {
+    if (mounted) setState(() => isLoading = true);
+    try {
+      notifications = await loadCachedNotifications();
+      if (mounted && notifications.isNotEmpty) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+      final freshNotifications = await fetchNotifications();
+      await cacheNotifications(freshNotifications);
+
+      if (mounted) {
+        setState(() {
+          notifications = freshNotifications;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading Notification: $e');
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // Replace with your real notifications data source
-    final List<NotificationModel> notifications = [];
-
     return SafeArea(
       child: Material(
         color: Colors.white,
@@ -195,7 +225,10 @@ class _NotificationsDrawerState extends State<_NotificationsDrawer> {
 
             // Notifications list
             Expanded(
-              child: notifications.isEmpty
+              child: isLoading
+                  ? const Center(
+                child: CircularProgressIndicator(),
+              ): notifications.isEmpty
                   ? const Center(
                 child: Text('No notifications'),
               )
