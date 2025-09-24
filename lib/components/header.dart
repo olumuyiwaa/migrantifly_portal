@@ -90,7 +90,11 @@ class _HeaderState extends State<Header> {
         const Expanded(child: SearchField()),
         const SizedBox(width: defaultPadding),
         IconButton(
-          icon: const Icon(Icons.notifications_rounded),
+          style: IconButton.styleFrom(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),padding: EdgeInsetsGeometry.all(12),
+          icon: const Icon(Icons.notifications_rounded, color: Colors.black87,),
           onPressed: _openNotificationsDrawer,
         )
       ],

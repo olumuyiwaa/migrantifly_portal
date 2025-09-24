@@ -36,7 +36,7 @@ class StatsCharts extends StatelessWidget {
               title: 'Applications by Stage',
               //  width: isWide ? constraints.maxWidth / 2 - 6 : constraints.maxWidth,
               height: 320,
-              child: StageBarChart(data: stats!.applicationsByStage),
+              child: StagePieChart(data: stats!.applicationsByStage),
             )),
           ],
         );
@@ -107,7 +107,7 @@ class VisaTypePieChart extends StatelessWidget {
         PieChartSectionData(
           color: colors[i % colors.length],
           value: entries[i].value.toDouble(),
-          radius: 60,
+          radius: 100,
           title: '${_pretty(entries[i].key)}\n${entries[i].value}',
           titleStyle: const TextStyle(
             color: Colors.white,
@@ -124,7 +124,7 @@ class VisaTypePieChart extends StatelessWidget {
           child: PieChart(
             PieChartData(
               sections: sections,
-              centerSpaceRadius: 34,
+              centerSpaceRadius: 0,
               sectionsSpace: 2,
               startDegreeOffset: -90,
             ),
@@ -148,90 +148,88 @@ class VisaTypePieChart extends StatelessWidget {
   }
 }
 
-class StageBarChart extends StatelessWidget {
+class StagePieChart extends StatelessWidget {
   final Map<String, int> data;
-  const StageBarChart({super.key, required this.data});
+
+  StagePieChart({super.key, required this.data});
+
+  // Define a set of distinct colors
+  final List<Color> _chartColors = const [
+    Colors.blue,
+    Colors.orange,
+    Colors.green,
+    Colors.purple,
+    Colors.red,
+    Colors.teal,
+    Colors.brown,
+    Colors.pink,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final entries = data.entries.toList();
-    if (entries.isEmpty || entries.every((e) => e.value == 0)) {
-      return const Center(child: Text('No data'));
-    }
+    final total = data.values.fold(0.0, (a, b) => a + b);
 
-    final groups = <BarChartGroupData>[];
-    final barColor = Colors.indigo;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: PieChart(
+            PieChartData(
+              sectionsSpace: 2,
+              centerSpaceRadius: 72,
+              sections: data.entries.map((entry) {
+                final index = data.keys.toList().indexOf(entry.key);
+                final color = _chartColors[index % _chartColors.length];
+                final percentage = total == 0 ? 0 : (entry.value / total * 100);
 
-    for (int i = 0; i < entries.length; i++) {
-      groups.add(
-        BarChartGroupData(
-          x: i,
-          barRods: [
-            BarChartRodData(
-              toY: entries[i].value.toDouble(),
-              color: barColor,
-              width: 18,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final maxY = (entries.map((e) => e.value).fold<int>(0, (a, b) => a > b ? a : b) * 1.2)
-        .clamp(1, double.infinity)
-        .toDouble();
-
-    return Padding(
-      padding: const EdgeInsets.all(2),
-      child: BarChart(
-        BarChartData(
-          maxY: maxY,
-          minY: 0,
-          gridData: FlGridData(show: true, drawVerticalLine: false),
-          borderData: FlBorderData(show: false),
-          titlesData: FlTitlesData(
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 34,
-                interval: _chooseInterval(maxY),
-                getTitlesWidget: (value, meta) => Text(
-                  value.toInt().toString(),
-                  style: const TextStyle(fontSize: 10),
-                ),
-              ),
-            ),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 34,
-                getTitlesWidget: (value, meta) {
-                  final i = value.toInt();
-                  if (i < 0 || i >= entries.length) return const SizedBox.shrink();
-                  final label = _pretty(entries[i].key);
-                  return Text(
-                    label.replaceAll(" ", "\n"),
-                    style: const TextStyle(fontSize: 10),
-                    textAlign: TextAlign.center,
-                  );
-                },
-              ),
+                return PieChartSectionData(
+                  color: color,
+                  value: entry.value.toDouble(),
+                  title: '${percentage.toStringAsFixed(1)}%',
+                  radius: 32,
+                  titleStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                );
+              }).toList(),
             ),
           ),
-          barGroups: groups,
         ),
-      ),
-    );
-  }
+        const SizedBox(height: 16),
+        // Legend
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 16,
+          runSpacing: 8,
+          children: data.entries.map((entry) {
+            final index = data.keys.toList().indexOf(entry.key);
+            final color = _chartColors[index % _chartColors.length];
+            final percentage = total == 0 ? 0 : (entry.value / total * 100);
 
-  double _chooseInterval(double maxY) {
-    if (maxY <= 5) return 1;
-    if (maxY <= 10) return 2;
-    if (maxY <= 25) return 5;
-    return 10;
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${entry.key.replaceAll("_", " ")} (${percentage.toStringAsFixed(1)}%)',
+                  style: const TextStyle(fontSize: 10),
+                ),
+              ],
+            );
+          }).toList(),
+        ),
+      ],
+    );
   }
 }
 

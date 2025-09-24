@@ -1,19 +1,18 @@
 import 'dart:convert';
-
-// import 'package:geocoding/geocoding.dart';
-// import 'package:geolocator/geolocator.dart';
 import 'package:Migrantifly/models/class_documents.dart';
 import 'package:Migrantifly/models/class_notifications.dart';
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
-import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/class_consultation.dart';
 import '../models/class_applications.dart';
 import '../models/class_transactions.dart';
 import '../models/class_users.dart';
+import '../models/class_visa_document_requirement.dart';
+import '../models/client_dashboard_stats.dart';
 import '../models/dashboard_stats.dart';
+import '../screens/dashboard/client_dashboard.dart';
 import 'api_helper.dart';
 
 Future<DashboardStats> getDashboardStats() async {
@@ -46,6 +45,80 @@ Future<DashboardStats?> loadCachedDashboardStats() async {
     return DashboardStats.fromJson(decoded);
   }
   return null;
+}
+
+Future<DashboardData> getClientDashboardStats() async {
+  final headers = await getHeaders();
+  final response = await http.get(
+    Uri.parse('$baseUrl/client/dashboard'),
+    headers: headers,
+  );
+
+  if (response.statusCode == 200) {
+    final stats = DashboardData.fromJson(json.decode(response.body)['data']);
+    print(stats);
+    await cacheClientDashboardStats(stats);
+    return stats;
+  } else {
+    throw Exception('Failed to load Client Dashboard Stats: ${response.statusCode}');
+  }
+}
+
+Future<void> cacheClientDashboardStats(DashboardData stats) async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = json.encode(stats.toJson());
+  await prefs.setString("dashboard_stats_client", jsonString);
+}
+
+Future<DashboardData?> loadCachedClientDashboardStats() async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString("dashboard_stats_client");
+  if (jsonString != null) {
+    final Map<String, dynamic> decoded = json.decode(jsonString);
+    return DashboardData.fromJson(decoded);
+  }
+  return null;
+}
+
+
+Future<List<DocumentRequirement>> fetchChecklist(String visaType) async {
+  final prefs = await SharedPreferences.getInstance();
+  final cacheKey = "checklist_$visaType";
+  final cacheExpiryKey = "checklist_${visaType}_expiry";
+
+  // 🔹 Step 1: Try to load from cache
+  final cachedData = prefs.getString(cacheKey);
+  final expiry = prefs.getInt(cacheExpiryKey);
+
+  if (cachedData != null &&
+      expiry != null &&
+      DateTime.now().millisecondsSinceEpoch < expiry) {
+    final List decoded = jsonDecode(cachedData);
+    return decoded.map((e) => DocumentRequirement.fromJson(e)).toList();
+  }
+
+  // 🔹 Step 2: Fetch from API if no valid cache
+  final headers = await getHeaders();
+  final response = await http.get(
+    Uri.parse('$baseUrl/documents/checklist/$visaType'),
+    headers: headers,
+  );
+
+  if (response.statusCode == 200) {
+    final body = jsonDecode(response.body);
+    final docs = body['data']['documents'] as List;
+    final parsedDocs =
+    docs.map((e) => DocumentRequirement.fromJson(e)).toList();
+
+    // 🔹 Step 3: Save to cache (with 24h expiry)
+    await prefs.setString(cacheKey, jsonEncode(docs));
+    await prefs.setInt(cacheExpiryKey,
+        DateTime.now().add(const Duration(hours: 24)).millisecondsSinceEpoch);
+
+    return parsedDocs;
+  } else {
+    throw Exception('Failed to load checklist');
+  }
 }
 
 Future<List<User>> fetchUsers() async {

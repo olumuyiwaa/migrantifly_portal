@@ -46,7 +46,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       allEvents = await loadCachedEvents();
       dashboardStats = await loadCachedDashboardStats();
       if (mounted && allUsers.isNotEmpty && allEvents.isNotEmpty && dashboardStats != null) {
-        setState(() {});
+        setState(() {
+          _isLoading = false;
+        });
       }
       final freshUsers = await fetchUsers();
       await cacheUsers(freshUsers);

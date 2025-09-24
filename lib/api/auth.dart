@@ -45,7 +45,6 @@ Future<void> signInAuth(
       await prefs.setString('first_name', (profile['firstName'] ?? '').toString());
       await prefs.setString('last_name', (profile['lastName'] ?? '').toString());
       await prefs.setString('phone', (profile['phone'] ?? '').toString());
-
       // Handle "Remember me" credentials for reAuth
       if (rememberMe) {
         await prefs.setString('password', password);
@@ -66,7 +65,7 @@ Future<void> signInAuth(
       if (!context.mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (context) => const ActiveSession()),
+        MaterialPageRoute(builder: (context) => ActiveSession()),
             (route) => false,
       );
     } else {

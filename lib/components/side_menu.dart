@@ -1,12 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/auth.dart';
 import '../constants.dart';
 import '../responsive.dart';
 
-class SideMenu extends StatelessWidget {
+class SideMenu extends StatefulWidget {
   final int pageIndex;
   final String image;
   final ValueChanged<int> onItemTapped;
@@ -20,6 +21,27 @@ class SideMenu extends StatelessWidget {
   });
 
   @override
+  State<SideMenu> createState() => _SideMenuState();
+}
+
+class _SideMenuState extends State<SideMenu> {
+  @override
+  void initState() {
+    super.initState();
+    getUserInfo();
+  }
+  String userRole = '';
+  String userName = '';
+  String userImage = '';
+  Future<void> getUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userRole = prefs.getString('role') ?? '';
+      userName = "${prefs.getString('first_name')} ${prefs.getString('last_name')}";
+      userImage = prefs.getString('role') ?? '';
+    });
+  }
+  @override
   Widget build(BuildContext context) {
     return Drawer(
         backgroundColor: secondaryColor,
@@ -29,88 +51,109 @@ class SideMenu extends StatelessWidget {
               children: [
                 DrawerHeader(
                   child: Container(
-                    clipBehavior: Clip.hardEdge,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
-                          spreadRadius: 1,
-                          blurRadius: 5,
-                        )
-                      ]),child: CachedNetworkImage(
-                        alignment:Alignment.topCenter,
-                        imageUrl: image,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                        placeholder: (context, url) =>Icon(Icons.person_rounded, size: 100),
-                        errorWidget: (context, url, error) =>
-                        const Icon(Icons.person_rounded, size: 100),
-                      ),),
+                    alignment: Alignment.center,
+            padding: EdgeInsets.symmetric(vertical: 24,horizontal: 8),
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                spreadRadius: 1,
+                blurRadius: 5,
+              )
+            ]),
+        child: Row(
+          spacing: 8,
+          children: [
+            Container(
+              padding:EdgeInsets.all(12),
+              child:  Image.asset(
+                "assets/images/logo.png",
+                height: 42,
+              ),),
+            Column(crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Migrantifly 1.0",
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  "© Emnac Tech",style: TextStyle(fontSize: 12),
+                )
+              ],
+            ),
+          ],
+        )),
                 ),
                 DrawerListTile(
                   title: "Dashboard",
                   svgSrc: "assets/icons/dashboard.svg",
                   press: () {
-                    onItemTapped(0);
-                    onTitleTapped("Dashboard"); // Pass the title when tapped
+                    widget.onItemTapped(0);
+                    widget.onTitleTapped("Dashboard"); // Pass the title when tapped
                   },
-                  isActive: pageIndex == 0,
+                  isActive: widget.pageIndex == 0,
                 ),
+                if (userRole.toLowerCase() != "client")
                 DrawerListTile(
                   title: "Users",
                   svgSrc: "assets/icons/users.svg",
                   press: () {
-                    onItemTapped(1);
-                    onTitleTapped("Users");
+                    widget.onItemTapped(1);
+                    widget.onTitleTapped("Users");
                   },
-                  isActive: pageIndex == 1,
+                  isActive: widget.pageIndex == 1,
                 ),
-                DrawerListTile(
+                if (userRole.toLowerCase() != "client")
+                  DrawerListTile(
                   title: "Applications",
                   svgSrc: "assets/icons/applications.svg",
                   press: () {
-                    onItemTapped(2);
-                    onTitleTapped("Applications");
+                    widget.onItemTapped(2);
+                    widget.onTitleTapped("Applications");
                   },
-                  isActive: pageIndex == 2,
-                ), if (!Responsive.isMobile(context))
+                  isActive: widget.pageIndex == 2,
+                ), if (!Responsive.isMobile(context) && userRole.toLowerCase() != "client")
                   DrawerListTile(
                     title: "Calendar",
                     svgSrc: "assets/icons/calendar.svg",
                     press: () {
-                      onItemTapped(3);
-                      onTitleTapped("Calendar");
+                      widget.onItemTapped(3);
+                      widget.onTitleTapped("Calendar");
                     },
-                    isActive: pageIndex == 3,
-                  ),DrawerListTile(
+                    isActive: widget.pageIndex == 3,
+                  ),
+                if (userRole.toLowerCase() != "client")
+                  DrawerListTile(
                   title: "Consultations",
                   svgSrc: "assets/icons/consultations.svg",
                   press: () {
-                    onItemTapped(4);
-                    onTitleTapped("Consultations");
+                    widget.onItemTapped(4);
+                    widget.onTitleTapped("Consultations");
                   },
-                  isActive: pageIndex == 4,
+                  isActive: widget.pageIndex == 4,
                 ),
-                DrawerListTile(
+                if (userRole.toLowerCase() != "client")
+                  DrawerListTile(
                   title: "Documents",
                   svgSrc: "assets/icons/documents.svg",
                   press: () {
-                    onItemTapped(5);
-                    onTitleTapped("Documents");
+                    widget.onItemTapped(5);
+                    widget.onTitleTapped("Documents");
                   },
-                  isActive: pageIndex == 5,
+                  isActive: widget.pageIndex == 5,
                 ),
+                if (userRole.toLowerCase() == "admin")
                 DrawerListTile(
                   title: "Transactions",
                   svgSrc: "assets/icons/transactions.svg",
                   press: () {
-                    onItemTapped(8);
-                    onTitleTapped("Transactions");
+                    widget.onItemTapped(8);
+                    widget.onTitleTapped("Transactions");
                   },
-                  isActive: pageIndex == 8,
+                  isActive: widget.pageIndex == 8,
                 ),
 
                 SizedBox(
@@ -154,20 +197,35 @@ class SideMenu extends StatelessWidget {
                       child: Row(
                         spacing: 8,
                         children: [
-                         Container(
-                           padding:EdgeInsets.all(12),
-                           child:  Image.asset(
-                           "assets/images/logo.png",
-                           height: 42,
-                         ),),
+                          Container(
+                            clipBehavior: Clip.hardEdge,
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.2),
+                                    spreadRadius: 1,
+                                    blurRadius: 5,
+                                  )
+                                ]),child: CachedNetworkImage(
+                            alignment:Alignment.topCenter,
+                            imageUrl: widget.image,
+                            fit: BoxFit.cover,
+                            width: 52,
+                            height: 52,
+                            placeholder: (context, url) =>Icon(Icons.person_rounded, size: 100),
+                            errorWidget: (context, url, error) =>
+                            const Icon(Icons.person_rounded, size: 42),
+                          ),),
                           Column(crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                "Migrantifly 1.0",
+                                userName,
                                 style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                               Text(
-                                "© Emnac Tech",
+                                userRole,
                               )
                             ],
                           ),

@@ -1,3 +1,4 @@
+import 'package:Migrantifly/screens/dashboard/client_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,6 +34,7 @@ class _ActiveSessionState extends State<ActiveSession> {
   int previousIndex = 0;
   String previousTitle = "Dashboard";
   String userImage = "";
+  String userRole = "";
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _ActiveSessionState extends State<ActiveSession> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       userImage = prefs.getString('image') ?? '';
+      userRole = prefs.getString('role') ?? '';
     });
   }
 
@@ -65,7 +68,9 @@ class _ActiveSessionState extends State<ActiveSession> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> selectedPage = [
-      DashboardScreen(
+     userRole == "client" ?
+     ClientDashboard(onItemTapped: (int index) => setState(() => _pageIndex = index),
+          onTitleTapped: (String title) => setState(() => _currentTitle = title)) : DashboardScreen(
         onItemTapped: (int index) => setState(() => _pageIndex = index),
         onTitleTapped: (String title) => setState(() => _currentTitle = title),
         onItemUser: (User value) => goToUserDetails(

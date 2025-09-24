@@ -7,6 +7,7 @@ import '../api/api_get.dart';
 import '../constants.dart';
 import '../models/class_applications.dart';
 import '../models/class_users.dart';
+import 'document_checklist_widget.dart';
 
 class ApplicationDetailsPreviewModal extends StatefulWidget {
   final Application application;
@@ -156,14 +157,20 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                         _buildDetailItem(Icons.location_on, 'Location', _nonEmpty(app.adviser.countryLocated)),
                       ])),]),
                     const Divider(height: 30),
-                    _buildSection('Key Dates', [
-                      _buildDetailItem(Icons.calendar_today, 'Created', _fmt(app.createdAt)),
-                      _buildDetailItem(Icons.update, 'Last Updated', _fmt(app.updatedAt)),
-                      _buildDetailItem(Icons.timeline, 'Latest Timeline Stage', _nonEmpty(app.latestTimelineEntry?.stage)),
-                      _buildDetailItem(Icons.event_note, 'Latest Timeline Date', _fmt(app.latestTimelineEntry?.date)),
-                      if ((app.latestTimelineEntry?.notes ?? '').isNotEmpty)
-                        _buildDetailItem(Icons.notes, 'Latest Notes', app.latestTimelineEntry!.notes!),
-                    ]),
+                    Row(spacing: defaultPadding,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Expanded(child:_buildSection('Key Dates', [
+                        _buildDetailItem(Icons.calendar_today, 'Created', _fmt(app.createdAt)),
+                        _buildDetailItem(Icons.update, 'Last Updated', _fmt(app.updatedAt)),
+                        _buildDetailItem(Icons.timeline, 'Latest Timeline Stage', _nonEmpty(app.latestTimelineEntry?.stage)),
+                        _buildDetailItem(Icons.event_note, 'Latest Timeline Date', _fmt(app.latestTimelineEntry?.date)),
+                        if ((app.latestTimelineEntry?.notes ?? '').isNotEmpty)
+                          _buildDetailItem(Icons.notes, 'Latest Notes', app.latestTimelineEntry!.notes!),
+                      ])),
+                      Expanded(child:_buildSection('Required Documents', [ DocumentChecklistWidget(
+                        visaType: app.visaType,
+                      )])),]),
                     const Divider(height: 30),
                     Row(children: [Expanded(child: _buildSection('Client', [
                       _buildDetailItem(Icons.person, 'Name', _nonEmpty(app.client.fullName)),
