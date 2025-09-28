@@ -1,11 +1,10 @@
 import 'package:Migrantifly/models/class_users.dart';
-
 import 'class_applications.dart';
 
 class Document {
   final String id;
-  final Application applicationId;
-  final User clientId;
+  final Application? applicationId;
+  final User? clientId;
   final String type;
   final String name;
   final String originalName;
@@ -23,8 +22,8 @@ class Document {
 
   Document({
     required this.id,
-    required this.applicationId,
-    required this.clientId,
+    this.applicationId,
+    this.clientId,
     required this.type,
     required this.name,
     required this.originalName,
@@ -44,8 +43,12 @@ class Document {
   factory Document.fromJson(Map<String, dynamic> json) {
     return Document(
       id: json['_id'],
-      applicationId: Application.fromJson(json['applicationId']),
-      clientId: User.fromJson(json['clientId']),
+      applicationId: (json['applicationId'] is Map<String, dynamic>)
+          ? Application.fromJson(json['applicationId'])
+          : null,
+      clientId: (json['clientId'] is Map<String, dynamic>)
+          ? User.fromJson(json['clientId'])
+          : null,
       type: json['type'],
       name: json['name'],
       originalName: json['originalName'],
@@ -54,10 +57,12 @@ class Document {
       mimeType: json['mimeType'],
       status: json['status'],
       reviewNotes: json['reviewNotes'],
-      reviewedBy:
-          json['reviewedBy'] != null ? User.fromJson(json['reviewedBy']) : null,
+      reviewedBy: (json['reviewedBy'] != null &&
+          json['reviewedBy'] is Map<String, dynamic>)
+          ? User.fromJson(json['reviewedBy'])
+          : null,
       reviewedAt: json['reviewedAt'] != null
-          ? DateTime.parse(json['reviewedAt'])
+          ? DateTime.tryParse(json['reviewedAt'])
           : null,
       isRequired: json['isRequired'] ?? false,
       v: json['__v'] ?? 0,
@@ -69,8 +74,8 @@ class Document {
   Map<String, dynamic> toJson() {
     return {
       "_id": id,
-      "applicationId": applicationId.toJson(),
-      "clientId": clientId.toJson(),
+      "applicationId": applicationId?.toJson(),
+      "clientId": clientId?.toJson(),
       "type": type,
       "name": name,
       "originalName": originalName,

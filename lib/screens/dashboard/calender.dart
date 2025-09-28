@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../api/api_get.dart';
 import '../../constants.dart';
+import '../../models/class_deadlines.dart';
 import '../../models/project.dart';
+import '../../responsive.dart';
 
 class Calendar extends StatefulWidget {
   const Calendar({super.key,});
@@ -12,63 +15,76 @@ class Calendar extends StatefulWidget {
 }
 
 class _CalendarState extends State<Calendar> {
-  List<String> locations = ['Paris', 'London', 'New York', 'Tokyo'];
-  late String selectedBranch = locations[0];
   int selectedYear = DateTime.now().year;
   DateTime selectedDate = DateTime.now();
   DateTime focusedDay = DateTime.now();
-
-  late Map<int, Map<String, int>> monthlyStats;
+  List<DueDeadline> _deadlines =[];
+  DeadlinesSummary? _summary;
 
   @override
   void initState() {
     super.initState();
-    _updateMonthlyStats();
+    loadDeadlines();
   }
 
-  // Generate working and non-working days per month dynamically
-  void _updateMonthlyStats() {
-    monthlyStats = generateMonthlyStats(selectedYear);
-  }
+  Future<void> loadDeadlines() async {
+    try {
+      final deadlines = await fetchDeadlines();
+      setState(() {
+        _deadlines = deadlines.deadlines;
+        _summary = deadlines.summary;
+      });
 
-  Map<int, Map<String, int>> generateMonthlyStats(int year) {
-    final Map<int, Map<String, int>> stats = {};
-    for (int month = 1; month <= 12; month++) {
-      int working = 0;
-      int nonWorking = 0;
-      final int daysInMonth = DateTime(year, month + 1, 0).day;
-      for (int d = 1; d <= daysInMonth; d++) {
-        final date = DateTime(year, month, d);
-        if (date.weekday >= DateTime.monday &&
-            date.weekday <= DateTime.friday) {
-          working++;
-        } else {
-          nonWorking++;
-        }
-      }
-      stats[month] = {'working': working, 'non-working': nonWorking};
+      // Optionally, force refresh in background
+      fetchDeadlines(forceRefresh: true).then((fresh) {
+        setState(() {
+          _deadlines = fresh.deadlines;
+          _summary = fresh.summary;
+        });
+      });
+    } catch (e) {
+      print("Error: $e");
     }
-    return stats;
   }
 
-  // Calculate total working and non-working days
-  int get totalWorkingDays =>
-      monthlyStats.values.fold(0, (sum, m) => sum + m['working']!);
-  int get totalNonWorkingDays =>
-      monthlyStats.values.fold(0, (sum, m) => sum + m['non-working']!);
+  List<DueDeadline> _getDeadlinesForDate(DateTime date) {
+    return _deadlines.where((d) {
+      return d.deadline.dueDate.year == date.year &&
+          d.deadline.dueDate.month == date.month &&
+          d.deadline.dueDate.day == date.day;
+    }).toList();
+  }
+
+  // Get deadline statistics for a specific month
+  Map<String, int> _getMonthDeadlineStats(int month) {
+    final monthDeadlines = _deadlines.where((d) {
+      return d.deadline.dueDate.year == selectedYear &&
+          d.deadline.dueDate.month == month;
+    }).toList();
+
+    int total = monthDeadlines.length;
+    int overdue = monthDeadlines.where((d) => d.overdue).length;
+    int upcoming = total - overdue;
+
+    return {
+      'total': total,
+      'overdue': overdue,
+      'upcoming': upcoming,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         color: Colors.white,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              spacing: 36,
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 16,runSpacing: 16,
               children: [_buildControls(), _buildSummaryCards()],
             ),
             const SizedBox(height: 36),
@@ -81,58 +97,127 @@ class _CalendarState extends State<Calendar> {
 
   Widget _buildControls() {
     return SizedBox(
-      width: 200,
-      child: Column(
+      width: 374,
+      child: !Responsive.isMobile(context)?Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 16,
         children: [
-          const Text('Select using calender',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(4)),
-            child: IconButton(
-              icon: const Icon(Icons.calendar_today, color: Colors.blue),
-              onPressed: () => _showDatePicker(context),
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select using calender',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4)),
+                child: IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.blue),
+                  onPressed: () => _showDatePicker(context),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          const Text('Select the year',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
-          Container(
-            width: 160,
-            decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(4)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () => setState(() {
-                    selectedYear--;
-                    _updateMonthlyStats();
-                  }),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select the year',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              Container(
+                width: 160,
+                decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: () => setState(() {
+                        selectedYear--;
+                      }),
+                    ),
+                    SizedBox(
+                      width: 52,
+                      child: Center(
+                          child: Text(selectedYear.toString(),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500))),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: () => setState(() {
+                        selectedYear++;
+                      }),
+                    ),
+                  ],
                 ),
-                SizedBox(
-                  width: 52,
-                  child: Center(
-                      child: Text(selectedYear.toString(),
-                          style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500))),
+              ),
+            ],
+          ),
+        ],
+      ):Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select using calender',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4)),
+                child: IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.blue),
+                  onPressed: () => _showDatePicker(context),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: () => setState(() {
-                    selectedYear++;
-                    _updateMonthlyStats();
-                  }),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Select the year',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              const SizedBox(height: 8),
+              Container(
+                width: 160,
+                decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4)),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.chevron_left),
+                      onPressed: () => setState(() {
+                        selectedYear--;
+                      }),
+                    ),
+                    SizedBox(
+                      width: 52,
+                      child: Center(
+                          child: Text(selectedYear.toString(),
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500))),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.chevron_right),
+                      onPressed: () => setState(() {
+                        selectedYear++;
+                      }),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -140,32 +225,37 @@ class _CalendarState extends State<Calendar> {
   }
 
   Widget _buildSummaryCards() => Container(
-        decoration: BoxDecoration(
-            border: Border.all(color: Colors.blue, width: 2),
-            borderRadius: BorderRadius.circular(8)),
-        child: Row(children: [
-          _buildCard(totalWorkingDays.toString(), 'Working\ndays'),
-          Container(width: 2, height: 80, color: Colors.blue),
-          _buildCard(totalNonWorkingDays.toString(), 'Weekend\ndays',
-              textColor: Colors.red),
-        ]),
-      );
+    width: 374,
+    decoration: BoxDecoration(
+        border: Border.all(color: Colors.blue, width: 2),
+        borderRadius: BorderRadius.circular(8)),
+    child: Row(children: [
+      _buildCard("${_summary?.total ?? 0}", 'Total\nDeadlines'),
+      Container(width: 2, height: 80, color: Colors.blue),
+      _buildCard("${_summary?.overdue ?? 0}", 'Overdue\nAlready', textColor: Colors.red),
+      Container(width: 2, height: 80, color: Colors.blue),
+      _buildCard("${_summary?.dueSoon ?? 0}", 'Due\nSoon'),
+      Container(width: 2, height: 80, color: Colors.blue),
+      _buildCard("${_summary?.dueToday ?? 0}", 'Due\nToday'),
+    ]),
+  );
 
   Widget _buildCard(String value, String label, {Color? textColor}) =>
-      Container(
-        width: 124,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(value,
-                style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: textColor)),
-            Text(label,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: textColor)),
-          ],
+      Expanded(
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            children: [
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.bold,
+                      color: textColor)),
+              Text(label,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: textColor)),
+            ],
+          ),
         ),
       );
 
@@ -173,12 +263,22 @@ class _CalendarState extends State<Calendar> {
     return SizedBox(
       height: MediaQuery.of(context).size.height * 0.88,
       child: SingleChildScrollView(
-        child: Column(
+        child:  !Responsive.isMobile(context)? Column(
           spacing: defaultPadding,
           children: [
             _buildCalendarRow([1, 2, 3, 4]),
             _buildCalendarRow([5, 6, 7, 8]),
             _buildCalendarRow([9, 10, 11, 12]),
+          ],
+        ):Column(
+          spacing: defaultPadding,
+          children: [
+            _buildCalendarRow([1, 2]),
+            _buildCalendarRow([3, 4]),
+            _buildCalendarRow([5, 6]),
+            _buildCalendarRow([7, 8]),
+            _buildCalendarRow([9, 10]),
+            _buildCalendarRow([11, 12]),
           ],
         ),
       ),
@@ -186,18 +286,18 @@ class _CalendarState extends State<Calendar> {
   }
 
   Widget _buildCalendarRow(List<int> months) => Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: months
-            .map((m) => Expanded(
-                child: SizedBox(height: 272, child: _buildMonthCalendar(m))))
-            .toList(),
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: months
+        .map((m) => Expanded(
+        child: SizedBox(height: 292, child: _buildMonthCalendar(m))))
+        .toList(),
+  );
 
   Widget _buildMonthCalendar(int month) {
     final daysInMonth = DateTime(selectedYear, month + 1, 0).day;
     final firstWeekday = DateTime(selectedYear, month, 1).weekday;
     final monthName = DateFormat('MMMM').format(DateTime(selectedYear, month));
-    final stats = monthlyStats[month]!;
+    final deadlineStats = _getMonthDeadlineStats(month);
 
     int dayNum = 1;
     List<Widget> colChildren = [
@@ -208,9 +308,9 @@ class _CalendarState extends State<Calendar> {
       Row(
           children: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
               .map((d) => Expanded(
-                  child: Text(d,
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      textAlign: TextAlign.center)))
+              child: Text(d,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  textAlign: TextAlign.center)))
               .toList()),
     ];
 
@@ -227,17 +327,59 @@ class _CalendarState extends State<Calendar> {
               curr.month == selectedDate.month &&
               curr.day == selectedDate.day;
 
+          // Get deadlines for this day
+          final deadlinesForDay = _getDeadlinesForDate(curr);
+          final hasDeadline = deadlinesForDay.isNotEmpty;
+
           weekRow.add(
             Expanded(
               child: GestureDetector(
-                onTap: () => setState(() => selectedDate = curr),
+                onTap: () {
+                  setState(() => selectedDate = curr);
+
+                  if (deadlinesForDay.isNotEmpty) {
+                    showModalBottomSheet(
+                      context: context,
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+                      builder: (context) {
+                        return Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(DateFormat.yMMMMd().format(curr),
+                                  style: const TextStyle(
+                                      fontSize: 18, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 12),
+                              ...deadlinesForDay.map((d) => ListTile(
+                                leading: Icon(
+                                  d.overdue ? Icons.warning : Icons.event,
+                                  color: d.overdue ? Colors.red : Colors.blue,
+                                ),
+                                title: Text(d.deadline.description),
+                                subtitle: Text("Visa: ${d.visaType} | Stage: ${d.stage}"),
+                                trailing: Text(
+                                  DateFormat('dd/MM').format(d.deadline.dueDate),
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              )),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                  }
+                },
+
                 child: Container(
                   margin: const EdgeInsets.all(1),
-                  decoration: isSelected
-                      ? BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(4))
-                      : null,
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.blue : null,
+                    borderRadius: BorderRadius.circular(4),
+                    border: hasDeadline ? Border.all(color: Colors.orange, width: 2) : null,
+                  ),
                   height: 24,
                   child: Center(
                     child: Text(
@@ -246,8 +388,8 @@ class _CalendarState extends State<Calendar> {
                         color: isSelected
                             ? Colors.white
                             : isWeekend
-                                ? Colors.red
-                                : null,
+                            ? Colors.red
+                            : null,
                         fontWeight: isSelected ? FontWeight.bold : null,
                       ),
                     ),
@@ -263,6 +405,7 @@ class _CalendarState extends State<Calendar> {
     }
 
     colChildren.add(const Spacer());
+    // Replace working/non-working days stats with deadline stats
     colChildren.add(
       Container(
         margin: const EdgeInsets.only(top: 8),
@@ -273,16 +416,23 @@ class _CalendarState extends State<Calendar> {
         child: Column(
           children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Working days:'),
-              Text('${stats['working']}',
-                  style: const TextStyle(fontWeight: FontWeight.bold))
+              Text('Total:', style: TextStyle(fontSize: 12)),
+              Text('${deadlineStats['total']}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))
             ]),
             const SizedBox(height: 4),
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Text('Weekend days:', style: const TextStyle(color: Colors.red)),
-              Text('${stats['non-working']}',
+              Text('Overdue:', style: const TextStyle(color: Colors.red, fontSize: 12)),
+              Text('${deadlineStats['overdue']}',
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.red))
+                      fontWeight: FontWeight.bold, color: Colors.red, fontSize: 12))
+            ]),
+            const SizedBox(height: 4),
+            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+              Text('Upcoming:', style: const TextStyle(color: Colors.green, fontSize: 12)),
+              Text('${deadlineStats['upcoming']}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.green, fontSize: 12))
             ]),
           ],
         ),
@@ -324,7 +474,6 @@ class _CalendarState extends State<Calendar> {
         setState(() {
           selectedDate = picked;
           selectedYear = picked.year;
-          _updateMonthlyStats();
         });
       }
     });

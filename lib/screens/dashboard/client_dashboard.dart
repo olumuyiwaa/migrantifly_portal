@@ -1,11 +1,13 @@
+import 'package:Migrantifly/components/deadline_card.dart';
+import 'package:Migrantifly/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../api/api_get.dart';
 import '../../components/client_application_card.dart';
-import '../../components/document_checklist_widget.dart';
-import '../../models/class_applications.dart';
+import '../../models/class_deadlines.dart';
 import '../../models/client_dashboard_stats.dart';
 import '../../responsive.dart';
 
@@ -26,11 +28,40 @@ class ClientDashboard extends StatefulWidget {
 class _ClientDashboardState extends State<ClientDashboard> {
   DashboardData? dashboardData;
   bool isLoading = true;
+  String greeting = "";
+  String tagline = "";
+  String username = "";
+  IconData icon = Icons.sunny;
+  var _deadlines =<DueDeadline>[];
+  DeadlinesSummary? _summary;
 
   @override
   void initState() {
     super.initState();
     _fetchAllData();
+    getUserInfo();
+    _determineGreeting();
+    loadDeadlines();
+  }
+
+  Future<void> loadDeadlines() async {
+    try {
+      final deadlines = await fetchDeadlines();
+      setState(() {
+        _deadlines = deadlines.deadlines;
+        _summary = deadlines.summary;
+      });
+
+      // Optionally, force refresh in background
+      fetchDeadlines(forceRefresh: true).then((fresh) {
+        setState(() {
+          _deadlines = fresh.deadlines;
+          _summary = fresh.summary;
+        });
+      });
+    } catch (e) {
+      print("Error: $e");
+    }
   }
 
   Future<void> _fetchAllData() async {
@@ -58,6 +89,32 @@ class _ClientDashboardState extends State<ClientDashboard> {
     }
   }
 
+  void _determineGreeting() {
+    final hour = DateTime.now().hour;
+
+    if (hour >= 0 && hour < 12) {
+      greeting = "Morning";
+      icon = Icons.wb_sunny;
+      tagline = "Start your day with focus and energy!";
+    } else if (hour >= 12 && hour < 17) {
+      greeting = "Afternoon";
+      icon = Icons.wb_sunny_outlined;
+      tagline = "Keep the momentum going — you’re doing great!";
+    } else {
+      greeting = "Evening";
+      icon = Icons.nights_stay;
+      tagline = "Wind down and review your progress for today.";
+    }
+  }
+
+
+  Future<void> getUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      username = "${prefs.getString('first_name')} ${prefs.getString('last_name')}";
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -66,27 +123,90 @@ class _ClientDashboardState extends State<ClientDashboard> {
 
     return RefreshIndicator(
       onRefresh: _fetchAllData,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSummaryGrid(),
-            const SizedBox(height: 28),
-            _buildSectionHeader("My Applications", Icons.folder),
-            const SizedBox(height: 12),
-            ...dashboardData!.applications
-                .map((app) => ApplicationCard(application: app)),
-            const SizedBox(height: 28),
-            _buildSectionHeader("Recent Payments", Icons.credit_card),
-            const SizedBox(height: 12),
-            ...dashboardData!.recentPayments
-                .map((p) => ModernPaymentCard(payment: p)),
-          ],
-        ),
-      ),
-    );
+      child:  SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding:  EdgeInsets.all(Responsive.isMobile(context)?8:16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+
+              Row(
+                children: [
+                  Icon(icon,size: 48,),
+                  const SizedBox(width: 12),
+                  Text(
+                    "Good $greeting\n$username",
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Text(tagline,style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w400,
+              ),),
+              const SizedBox(height: 14),
+              _buildSummaryGrid(),
+              const SizedBox(height: 28),
+            Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: defaultPadding,
+            children: [
+            Expanded(
+            flex: 2,
+            child:Column(children:[_buildSectionHeader("My Applications", Icons.folder),
+                  const SizedBox(height: 12),
+                  ...dashboardData!.applications
+                      .map((app) => ApplicationCard(application: app)),
+                 ])),
+                  if(!Responsive.isMobile(context))
+                    Expanded(flex:1,child: SizedBox(child:
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        if(dashboardData!.recentPayments.isEmpty)Container(
+                            alignment: Alignment.center,
+                            height: 100,child: Text("No Data Yet")),
+                        _buildSectionHeader("Recent Payments", Icons.credit_card),
+                        const SizedBox(height: 12),
+                        ...dashboardData!.recentPayments
+                            .map((p) => ModernPaymentCard(payment: p)),
+                        const SizedBox(height: 28),
+                        _buildSectionHeader("Deadlines", Icons.event),
+                        const SizedBox(height: 12),
+                        if(_deadlines.isEmpty)Container(
+                            alignment: Alignment.center,
+                            height: 100,child: Text("No Data Yet")),
+                        ..._deadlines.map((deadline) => DeadlineCard(deadline: deadline)),
+                      ],)))
+                ],
+              ),
+              const SizedBox(height: 28),
+              if(Responsive.isMobile(context))
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    if(dashboardData!.recentPayments.isEmpty)Container(
+                        alignment: Alignment.center,
+                        height: 100,child: Text("No Data Yet")),
+                    _buildSectionHeader("Recent Payments", Icons.credit_card),
+                    const SizedBox(height: 12),
+                    ...dashboardData!.recentPayments
+                        .map((p) => ModernPaymentCard(payment: p)),
+                    const SizedBox(height: 28),
+                    _buildSectionHeader("Deadlines", Icons.event),
+                    const SizedBox(height: 12),
+                    if(_deadlines.isEmpty)Container(
+                        alignment: Alignment.center,
+                        height: 100,child: Text("No Data Yet")),
+                    ..._deadlines.map((deadline) => DeadlineCard(deadline: deadline)),
+                  ],)
+            ],
+          ),
+        ));
   }
 
   Widget _buildSummaryGrid() {
@@ -99,11 +219,11 @@ class _ClientDashboardState extends State<ClientDashboard> {
     ];
 
     return Wrap(
+      spacing: Responsive.isMobile(context)?(MediaQuery.of(context).size.width * 0.034):10,runSpacing: 12,
       children: items.map((item) {
         final (title, value, icon, color) = item;
-        return Container(
-          padding: EdgeInsets.all(Responsive.isMobile(context)?6:12),
-          width: Responsive.isMobile(context)?172:320,
+        return SizedBox(
+          width: Responsive.isMobile(context)?(MediaQuery.of(context).size.width * 0.415):(MediaQuery.of(context).size.width * 0.2),
           child: ModernSummaryCard(
             title: title,
             value: value,
@@ -159,7 +279,7 @@ class ModernSummaryCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.3),

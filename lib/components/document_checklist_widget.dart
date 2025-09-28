@@ -27,6 +27,7 @@ class DocumentChecklistWidget extends StatelessWidget {
           children: docs.map((doc) {
             return SizedBox(
               width: Responsive.isMobile(context)?MediaQuery.of(context).size.width-20:200,
+              height:Responsive.isMobile(context)?null: 160,
               child: Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -38,16 +39,15 @@ class DocumentChecklistWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        doc.name,
+                        doc.name,maxLines: 2,
                         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        doc.description,
+                        doc.description,maxLines: Responsive.isMobile(context)?3: 4,
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
                       ),
-                      const SizedBox(height: 8),
-                      Wrap(
+                      Responsive.isMobile(context)?SizedBox(height: 8,):Spacer(),                      Wrap(
                         spacing: 6,
                         children: doc.formats
                             .map((f) => Text(f, style: const TextStyle(

@@ -58,20 +58,9 @@ class UserInfoPreview extends StatelessWidget {
             Row(
               children: [
                 Expanded(flex: 1, child: _buildDetailItem(Icons.location_on, 'Country Located', user.countryLocated)),
-                Expanded( flex:3,child: _buildDetailItem(Icons.flag, 'Nationality', user.representedCountry)),
-            ]),
-          ]),
-          const Divider(height: 30),
-          _buildSection('Account Info', [
-            Row(
-              children: [
-                Expanded(child: _buildDetailItem(Icons.label, 'User ID', user.id)),
-                Expanded(child: _buildDetailItem(Icons.image, 'Media Count', '${user.mediaFiles.length} files')),
-                Expanded(child: _buildDetailItem(Icons.bookmark, 'Bookmarked Events', '${user.bookmarkedEvents.length}')),
-                if (user.role.toLowerCase()=="artist")
-                  Expanded(child: _buildDetailItem(Icons.language, 'Countries of Interest', user.countries.join(', '))),
-              ],
-            ),
+                Expanded( flex:1,child: _buildDetailItem(Icons.flag, 'Nationality', user.representedCountry)),
+                Expanded(flex:2,child: _buildDetailItem(Icons.label, 'User ID', user.id)),
+              ]),
           ]),
         ],
       ),

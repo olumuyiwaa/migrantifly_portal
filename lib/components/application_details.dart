@@ -1,5 +1,7 @@
 // dart
+import 'package:Migrantifly/components/uploaded_documents.dart';
 import 'package:Migrantifly/models/class_documents.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../api/api_delete.dart';
@@ -8,6 +10,7 @@ import '../constants.dart';
 import '../models/class_applications.dart';
 import '../models/class_users.dart';
 import 'document_checklist_widget.dart';
+import 'document_details.dart';
 
 class ApplicationDetailsPreviewModal extends StatefulWidget {
   final Application application;
@@ -22,20 +25,439 @@ class ApplicationDetailsPreviewModal extends StatefulWidget {
       _ApplicationDetailsPreviewModalState();
 }
 
+// void _showEditApplicationFormModal(BuildContext context, Application application) {
+//   // TODO: Replace with Application edit form when ready.
+//   // Keeping a placeholder dialog to avoid runtime issues.
+//   showDialog(
+//     context: context,
+//     builder: (BuildContext context) {
+//       return AlertDialog(
+//         title: const Text("Edit Application"),
+//         content: const Text("Replace this with your Application edit form."),
+//         actions: [
+//           TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Close")),
+//         ],
+//       );
+//     },
+//   );
+// }
 void _showEditApplicationFormModal(BuildContext context, Application application) {
-  // TODO: Replace with Application edit form when ready.
-  // Keeping a placeholder dialog to avoid runtime issues.
   showDialog(
     context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text("Edit Application"),
-        content: const Text("Replace this with your Application edit form."),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Close")),
+    builder: (context) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 500,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Edit Application',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            const TextField(
+              decoration: InputDecoration(
+                labelText: 'Application Title',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: 'Status',
+                border: OutlineInputBorder(),
+              ),
+              items: ['In Progress', 'Pending', 'Approved', 'Declined']
+                  .map((status) => DropdownMenuItem(
+                value: status,
+                child: Text(status),
+              ))
+                  .toList(),
+              onChanged: (value) {},
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: 'Progress (%)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Application updated successfully'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+//TODO: Quick Actions
+void _showQuickActions(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 400,
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Quick Actions',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            _buildDialogAction(
+              icon: Icons.note_add,
+              title: 'Add Note',
+              subtitle: 'Add a note to this application',
+              onTap: () {
+                Navigator.pop(context);
+                _addNote(context);
+              },
+            ),
+            _buildDialogAction(
+              icon: Icons.upload_file,
+              title: 'Upload Document',
+              subtitle: 'Upload a new document',
+              onTap: () {
+                Navigator.pop(context);
+                _uploadDocument(context);
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+
+
+Widget _buildDialogAction({
+  required IconData icon,
+  required String title,
+  required String subtitle,
+  required VoidCallback onTap,
+}) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, size: 20, color: Colors.grey[700]),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+Widget _buildQuickActionsCard(BuildContext context) {
+  return Card(
+    elevation: 0,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: BorderSide(color: Colors.grey[200]!),
+    ),
+    child: Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildActionButton(
+            icon: Icons.note_add,
+            label: 'Add Note',
+            onTap: () => _addNote(context),
+          ),
+          const SizedBox(height: 8),
+          _buildActionButton(
+            icon: Icons.upload_file,
+            label: 'Upload Document',
+            onTap: () => _uploadDocument(context),
+          ),
         ],
+      ),
+    ),
+  );
+}
+
+void _uploadDocument(BuildContext context) async {
+  final List<String> documentTypes = [
+    'passport',
+    'photo',
+    'job_offer',
+    'employment_contract',
+    'financial_records',
+    'bank_statements',
+    'police_clearance',
+    'medical_certificate',
+    'qualification_documents',
+    'marriage_certificate',
+    'birth_certificate',
+    'other'
+  ];
+
+  String? selectedType;
+  String? fileName;
+
+  showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            title: const Text('Upload Document'),
+            content: SizedBox(
+              width: 400,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cloud_upload, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+
+                  // Dropdown for selecting type
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(
+                      labelText: "Document Type",
+                      border: OutlineInputBorder(),
+                    ),
+                    value: selectedType,
+                    items: documentTypes
+                        .map((type) =>
+                        DropdownMenuItem(value: type, child: Text(type.capitalizeWords())))
+                        .toList(),
+                    onChanged: (value) => setState(() => selectedType = value),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // File preview
+                  if (fileName != null)
+                    Text("Selected file: $fileName",
+                        style: const TextStyle(fontSize: 12)),
+                  if (fileName == null)
+                    const Text("No file chosen",
+                        style: TextStyle(fontSize: 12, color: Colors.grey)),
+                ],
+              ),
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () async {
+                  final result = await FilePicker.platform.pickFiles(
+                    type: FileType.custom,
+                    allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png'],
+                  );
+                  if (result != null) {
+                    setState(() {
+                      fileName = result.files.single.name;
+                    });
+                  }
+                },
+                child: const Text('Choose File'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: selectedType != null && fileName != null
+                    ? () {
+                  // TODO: upload logic (send file + type to backend)
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text("Document uploaded successfully!")),
+                  );
+                }
+                    : null,
+                child:  Text('Upload',style: TextStyle(color: selectedType != null && fileName != null
+                    ? Colors.white : Colors.grey),),
+              ),
+            ],
+          );
+        },
       );
     },
+  );
+}
+
+Widget _buildActionButton({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+}) {
+  return Material(
+    color: Colors.transparent,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: Colors.grey[600]),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const Spacer(),
+            Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+
+void _addNote(BuildContext context) {
+  String note = '';
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Add Note'),
+      content: SizedBox(
+        width: 400,
+        child: TextField(
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: 'Enter your note here...',
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (value) => note = value,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            // Implement note saving logic
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Note added successfully'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          },
+          child: const Text('Add Note'),
+        ),
+      ],
+    ),
   );
 }
 
@@ -97,7 +519,7 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
     if (mounted) setState(() => _isLoadingDocuments = true);
     try {
       // Load cached data first
-      documents = await fetchApplicationDocuments(widget.application.id);
+      documents = await fetchApplicationDocuments("68d528f5d4e355d74386b4ea");
       if (mounted && documents.isNotEmpty) {
         setState(() {});
         setState(() => _isLoadingDocuments = false);
@@ -191,8 +613,9 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                           child: _buildAvatarOrImage(app.client.image),
                         ),
                       ),]),
-                    if (documents.isNotEmpty)
-                      Column(children: [
+                      Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                         const Divider(height: 30),
                         Text(
                           "Documents",
@@ -203,16 +626,10 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                           ),
                         ),
                         const SizedBox(height: 12),
-                        SizedBox(height: 80,child: ListView.builder(
-                          padding: EdgeInsets.all(12),
-                          itemCount: documents.length,
-                          shrinkWrap: true,
-                          scrollDirection: Axis.horizontal,
-                          itemBuilder: (BuildContext context, int index) {
-                            final document = documents[index];
-                            return _buildDetailItem(Icons.file_open, 'Document', _nonEmpty(document.name));
-                          },
-                        ),)])
+                            UploadedDocument(
+                              applicationId: app.id,
+                            )
+                          ])
                   ],
                 ),
               )
@@ -440,5 +857,13 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
         ],
       ),
     );
+  }
+}
+extension StringCasingExtension on String {
+  String capitalizeWords() {
+    return split("_")
+        .map((word) =>
+    word.isNotEmpty ? "${word[0].toUpperCase()}${word.substring(1)}" : "")
+        .join(" ");
   }
 }

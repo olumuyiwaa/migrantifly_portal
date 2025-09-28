@@ -7,10 +7,12 @@ import '../../components/header.dart';
 import '../../components/side_menu.dart';
 import '../../constants.dart';
 import '../../controllers/menu_app_controller.dart';
+import '../../models/class_applications.dart';
 import '../../models/class_users.dart';
 import '../../responsive.dart';
 import '../dashboard/administration.dart';
 import '../dashboard/calender.dart';
+import '../../components/client_application_details.dart';
 import '../dashboard/documents.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../dashboard/consultations.dart';
@@ -31,6 +33,7 @@ class _ActiveSessionState extends State<ActiveSession> {
   int _pageIndex = 0;
   String _currentTitle = "Dashboard";
   User user = User.empty();
+  Application application = Application.empty();
   int previousIndex = 0;
   String previousTitle = "Dashboard";
   String userImage = "";
@@ -99,7 +102,7 @@ class _ActiveSessionState extends State<ActiveSession> {
         onTitleTapped: (String title) => setState(() => _currentTitle = title),
         previousPageIndex: previousIndex,
         previousPageTitle: previousTitle,
-      ),Transactions()
+      ),Transactions(),
     ];
 
     return Scaffold(

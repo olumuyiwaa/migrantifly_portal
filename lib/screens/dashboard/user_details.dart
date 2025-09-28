@@ -5,6 +5,7 @@ import '../../components/user_info_preview.dart';
 import '../../constants.dart';
 import '../../models/class_users.dart';
 import '../../models/project.dart';
+import 'documents.dart';
 
 void _handleFilterChange(List<String> statuses, List<String> industries) {
   // Handle filter changes
@@ -43,6 +44,11 @@ class _UserDetailsState extends State<UserDetails> {
           height: 692,
           child: ApplicationListTable(
             userID: widget.user.id, filter: [],
+          )),
+          SizedBox(
+          height: 692,
+          child: DocumentsWidget(
+            clientId: widget.user.id,
           ))
     ]));
   }

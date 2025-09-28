@@ -1,3 +1,4 @@
+import 'package:Migrantifly/components/user_profile_modal.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -115,7 +116,7 @@ class _SideMenuState extends State<SideMenu> {
                     widget.onTitleTapped("Applications");
                   },
                   isActive: widget.pageIndex == 2,
-                ), if (!Responsive.isMobile(context) && userRole.toLowerCase() != "client")
+                ),
                   DrawerListTile(
                     title: "Calendar",
                     svgSrc: "assets/icons/calendar.svg",
@@ -182,6 +183,14 @@ class _SideMenuState extends State<SideMenu> {
                       ),
                     ),
                   ),
+                  InkWell(
+                      onTap: (){
+                        showDialog(
+                          context: context,
+                          builder: (context) => UserProfileModal(
+                          ),
+                        );
+                      },child:
                   Container(
                       padding: EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -230,7 +239,7 @@ class _SideMenuState extends State<SideMenu> {
                             ],
                           ),
                         ],
-                      ))
+                      )))
                 ],))
           ],
         ));

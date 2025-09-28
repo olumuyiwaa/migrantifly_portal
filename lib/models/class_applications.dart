@@ -10,8 +10,13 @@ class Application {
   final String visaType;
   final String stage;
   final int progress;
+  final String? inzReference;
+  final DateTime? submissionDate;
+  final DateTime? decisionDate;
+  final String? outcome;
+  final String? decisionLetter;
   final List<TimelineEntry> timeline;
-  final List<dynamic> deadlines; // Keep flexible until schema is defined
+  final List<Deadline> deadlines;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +28,11 @@ class Application {
     required this.visaType,
     required this.stage,
     required this.progress,
+    this.inzReference,
+    this.submissionDate,
+    this.decisionDate,
+    this.outcome,
+    this.decisionLetter,
     required this.timeline,
     required this.deadlines,
     required this.createdAt,
@@ -41,6 +51,40 @@ class Application {
     if (n.isNotEmpty) return n;
     if (client.email.trim().isNotEmpty) return client.email.trim();
     return 'Client';
+  }
+
+  String get displayOutcome {
+    if (outcome == null) return 'Pending';
+    switch (outcome!.toLowerCase()) {
+      case 'approved':
+        return 'Approved';
+      case 'declined':
+        return 'Declined';
+      case 'pending':
+        return 'Pending';
+      default:
+        return 'Unknown';
+    }
+  }
+
+  bool get hasActiveDeadlines {
+    return deadlines.any((deadline) =>
+    !deadline.completed &&
+        deadline.dueDate != null &&
+        deadline.dueDate!.isAfter(DateTime.now())
+    );
+  }
+
+  List<Deadline> get upcomingDeadlines {
+    final now = DateTime.now();
+    return deadlines
+        .where((deadline) =>
+    !deadline.completed &&
+        deadline.dueDate != null &&
+        deadline.dueDate!.isAfter(now)
+    )
+        .toList()
+      ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
   }
 
   TimelineEntry? get latestTimelineEntry {
@@ -72,11 +116,19 @@ class Application {
       visaType: (json['visaType'] ?? '').toString(),
       stage: (json['stage'] ?? '').toString(),
       progress: (json['progress'] as num?)?.toInt() ?? 0,
+      inzReference: json['inzReference']?.toString(),
+      submissionDate: _parseDate(json['submissionDate']),
+      decisionDate: _parseDate(json['decisionDate']),
+      outcome: json['outcome']?.toString(),
+      decisionLetter: json['decisionLetter']?.toString(),
       timeline: ((json['timeline'] as List?) ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(TimelineEntry.fromJson)
           .toList(),
-      deadlines: (json['deadlines'] as List?) ?? const [],
+      deadlines: ((json['deadlines'] as List?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(Deadline.fromJson)
+          .toList(),
       createdAt: _parseDate(json['createdAt']),
       updatedAt: _parseDate(json['updatedAt']),
     );
@@ -91,8 +143,13 @@ class Application {
       'visaType': visaType,
       'stage': stage,
       'progress': progress,
+      'inzReference': inzReference,
+      'submissionDate': submissionDate?.toIso8601String(),
+      'decisionDate': decisionDate?.toIso8601String(),
+      'outcome': outcome,
+      'decisionLetter': decisionLetter,
       'timeline': timeline.map((t) => t.toJson()).toList(),
-      'deadlines': deadlines,
+      'deadlines': deadlines.map((d) => d.toJson()).toList(),
       'createdAt': createdAt?.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
     };
@@ -107,6 +164,11 @@ class Application {
       visaType: '',
       stage: '',
       progress: 0,
+      inzReference: null,
+      submissionDate: null,
+      decisionDate: null,
+      outcome: null,
+      decisionLetter: null,
       timeline: const [],
       deadlines: const [],
       createdAt: null,
@@ -147,6 +209,69 @@ class TimelineEntry {
       'date': date?.toIso8601String(),
       'notes': notes,
       'updatedBy': updatedBy,
+    };
+  }
+}
+
+class Deadline {
+  final String? id;
+  final String type;
+  final String? description;
+  final DateTime? dueDate;
+  final bool completed;
+
+  Deadline({
+    this.id,
+    required this.type,
+    this.description,
+    this.dueDate,
+    this.completed = false,
+  });
+
+  bool get isOverdue {
+    if (dueDate == null || completed) return false;
+    return dueDate!.isBefore(DateTime.now());
+  }
+
+  bool get isDueSoon {
+    if (dueDate == null || completed) return false;
+    final now = DateTime.now();
+    final threeDaysFromNow = now.add(const Duration(days: 3));
+    return dueDate!.isAfter(now) && dueDate!.isBefore(threeDaysFromNow);
+  }
+
+  String get displayType {
+    switch (type.toLowerCase()) {
+      case 'rfi':
+        return 'Request for Information';
+      case 'ppi':
+        return 'Potentially Prejudicial Information';
+      case 'medical':
+        return 'Medical Examination';
+      case 'document':
+        return 'Document Submission';
+      default:
+        return type;
+    }
+  }
+
+  factory Deadline.fromJson(Map<String, dynamic> json) {
+    return Deadline(
+      id: json['_id']?.toString(),
+      type: (json['type'] ?? '').toString(),
+      description: json['description']?.toString(),
+      dueDate: _parseDate(json['dueDate']),
+      completed: (json['completed'] as bool?) ?? false,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) '_id': id,
+      'type': type,
+      'description': description,
+      'dueDate': dueDate?.toIso8601String(),
+      'completed': completed,
     };
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../api/api_get.dart';
+import '../../components/document_details.dart';
 import '../../models/class_documents.dart';
 import '../../constants.dart';
 
 class DocumentsWidget extends StatefulWidget {
-  const DocumentsWidget({super.key});
+  final String? clientId;
+  const DocumentsWidget({super.key, this.clientId});
 
   @override
   State<DocumentsWidget> createState() => _DocumentsWidgetState();
@@ -26,7 +28,10 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
     if (mounted) setState(() => _isLoadingDocuments = true);
     try {
       // Load cached data first
-      documents = await loadCachedDocuments();
+     final documentsList = await loadCachedDocuments();
+     (widget.clientId != null)?
+      documents = documentsList.where((document) =>
+      document.clientId!.id == widget.clientId).toList():documents=documentsList;
       if (mounted && documents.isNotEmpty) {
         setState(() {});
         setState(() => _isLoadingDocuments = false);
@@ -38,7 +43,9 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
 
       if (mounted) {
         setState(() {
-          documents = freshDocuments;
+          (widget.clientId != null)?
+          documents = freshDocuments.where((document) =>
+          document.clientId!.id == widget.clientId).toList():documents=freshDocuments;
           _isLoadingDocuments = false;
         });
       }
@@ -294,7 +301,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
-                        doc.clientId.fullName,
+                        doc.clientId?.fullName ?? "N/A",
                         style: TextStyle(
                           fontSize: 12,
                           color: Colors.grey[600],
@@ -350,240 +357,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
   Widget _buildDocumentDetailPanel() {
     final doc = documents[_selectedIndex];
 
-    return Container(
-      color: Colors.grey[50],
-      child: Column(
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey, width: 0.5),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      _getDocumentIcon(doc),
-                      color: _getDocumentColor(doc),
-                      size: 32,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Document Preview",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            doc.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _clearSelection,
-                      icon: const Icon(Icons.close),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.grey[100],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Detail content
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Status badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor(doc.status),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          doc.status.toLowerCase() == 'approved'
-                              ? Icons.check_circle
-                              : doc.status.toLowerCase() == 'rejected'
-                              ? Icons.cancel
-                              : Icons.schedule,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          doc.status.toUpperCase(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Document details
-                  _buildDetailSection("Document Information", [
-                    _buildDetailRow(Icons.description_outlined, "Type", doc.type.toUpperCase()),
-                    _buildDetailRow(Icons.file_present, "Original Name", doc.originalName),
-                    _buildDetailRow(Icons.storage, "File Size", "${(doc.fileSize / (1024 * 1024)).toStringAsFixed(2)} MB"),
-                    _buildDetailRow(Icons.code, "MIME Type", doc.mimeType),
-                  ]),
-
-                  const SizedBox(height: 24),
-
-                  // Client information
-                  _buildDetailSection("Client Information", [
-                    _buildDetailRow(Icons.person_outline, "Uploaded By", doc.clientId.fullName),
-                  ]),
-
-                  // Review information
-                  if (doc.reviewNotes.isNotEmpty || doc.reviewedBy != null) ...[
-                    const SizedBox(height: 24),
-                    _buildDetailSection("Review Information", [
-                      if (doc.reviewedBy != null)
-                        _buildDetailRow(Icons.person_outline, "Reviewed By", doc.reviewedBy!.fullName),
-                      if (doc.reviewNotes.isNotEmpty)
-                        _buildDetailRow(Icons.notes_outlined, "Review Notes", doc.reviewNotes),
-                    ]),
-                  ],
-
-                  const SizedBox(height: 32),
-
-                  // Action buttons
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () {
-                          // TODO: open document in browser/viewer
-                          debugPrint("Opening document: ${doc.name}");
-                        },
-                        icon: const Icon(Icons.open_in_new),
-                        label: const Text("Open Document"),
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        onPressed: () => _downloadDocument(doc),
-                        icon: const Icon(Icons.download),
-                        label: const Text("Download"),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.withOpacity(0.2)),
-          ),
-          child: Column(
-            children: children,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 20, color: Colors.grey[600]),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return DocumentDetails(doc: doc,);
   }
 
   IconData _getDocumentIcon(Document doc) {
@@ -604,7 +378,6 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
         return Icons.insert_drive_file;
     }
   }
-
   Color _getDocumentColor(Document doc) {
     switch (doc.mimeType.toLowerCase()) {
       case 'application/pdf':

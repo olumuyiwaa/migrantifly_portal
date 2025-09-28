@@ -179,6 +179,7 @@ class _NotificationsDrawerState extends State<_NotificationsDrawer> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
