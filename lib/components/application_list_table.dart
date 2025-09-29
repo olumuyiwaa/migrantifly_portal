@@ -122,21 +122,6 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
     );
   }
 
-  void _showEditApplicationModal(BuildContext context, Application app) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Edit Application"),
-          content: const Text("Replace this dialog with your Application edit form."),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Close")),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _showDeleteApplicationModal(BuildContext context, Application app) {
     return showDialog<void>(
       context: context,
@@ -220,7 +205,13 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
     final d = local.day.toString().padLeft(2, '0');
     return "$y-$m-$d";
   }
-
+  Color _getProgressColor(int progress) {
+    if (progress < 20) return Colors.red;
+    if (progress < 50) return Colors.orange;
+    if (progress < 70) return Colors.yellow;
+    if (progress < 90) return Colors.green;
+    return Colors.blue;
+  }
   @override
   Widget build(BuildContext context) {
     return widget.userID.isNotEmpty && _filteredApplications.isEmpty && !_isLoading
@@ -328,12 +319,12 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
                         DataColumn(label: Text('Adviser', style: TextStyle(fontSize: 12))),
                         DataColumn(label: Text('Visa Type', style: TextStyle(fontSize: 12))),
                         DataColumn(label: Text('Stage', style: TextStyle(fontSize: 12))),
-                        DataColumn(label: Text('Progress', style: TextStyle(fontSize: 12))),
+                        DataColumn(label: SizedBox(width: 120, child: Text('Progress', style: TextStyle(fontSize: 12)))),
                         DataColumn(label: Text('Consultation ID', style: TextStyle(fontSize: 12))),
                         DataColumn(label: Text('Created', style: TextStyle(fontSize: 12))),
                         DataColumn(label: Text('Updated', style: TextStyle(fontSize: 12))),
                         DataColumn(
-                          label: Expanded(
+                          label: SizedBox(width: 100,
                             child: Text('Actions', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
                           ),
                         ),
@@ -356,7 +347,26 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
                           DataCell(Text(adviserName, style: const TextStyle(fontSize: 12))),
                           DataCell(Text(app.visaType, style: const TextStyle(fontSize: 12))),
                           DataCell(Text(app.stage, style: const TextStyle(fontSize: 12))),
-                          DataCell(Text("${app.progress}%", style: const TextStyle(fontSize: 12))),
+                          DataCell(Row(
+                            spacing:8,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: LinearProgressIndicator(
+                                    value: app.progress / 100,
+                                    backgroundColor: Colors.grey[200],
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      _getProgressColor(app.progress),
+                                    ),
+                                    minHeight: 8,
+                                  ),
+                                ),
+                              ),
+                              Text("${app.progress}%", style: const TextStyle(fontSize: 12)),
+                              SizedBox(width: 20,)
+                            ],
+                          )),
                           DataCell(SizedBox(
                             width: 120,
                             child: Text(app.consultationId, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
@@ -364,18 +374,20 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
                           DataCell(Text(_fmt(app.createdAt), style: const TextStyle(fontSize: 12))),
                           DataCell(Text(_fmt(app.updatedAt), style: const TextStyle(fontSize: 12))),
                           DataCell(
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                IconButton(
-                                  onPressed: () => _showDeleteApplicationModal(context, app),
-                                  icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                                ),
-                                IconButton(
-                                  onPressed: () => _showEditApplicationModal(context, app),
-                                  icon: const Icon(Icons.edit, size: 18),
-                                ),
-                              ],
+                            SizedBox(width:100,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => _showDeleteApplicationModal(context, app),
+                                    icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                                  ),
+                                  IconButton(
+                                    onPressed: () => _showApplicationDetailsModal(context, app),
+                                    icon: const Icon(Icons.file_open, size: 18),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ]);

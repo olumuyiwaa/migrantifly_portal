@@ -148,3 +148,32 @@ Future<void> createBusiness({
     throw Exception(errorMessage);
   }
 }
+
+Future<void> postNote(String applicationId, String type, String description, DateTime? dueDate) async {
+  final headers = await getHeaders();
+  final url = Uri.parse("$baseUrl/applications/$applicationId/$type");
+  final body = jsonEncode({
+    "description": description,
+    "dueDate": (dueDate ?? DateTime.now()).toIso8601String(),
+  });
+
+  final res = await http.post(url,
+      headers: headers, body: body);
+
+  if (res.statusCode != 200 && res.statusCode != 201) {
+    throw Exception("Failed to add $type note: ${res.body}");
+  }
+}
+
+Future<void> submitToInz(String applicationId, String inzReference) async {
+  final headers = await getHeaders();
+  final url = Uri.parse("$baseUrl/applications/$applicationId/submit-to-inz");
+  final body = jsonEncode({"inzReference": inzReference});
+
+  final res = await http.patch(url,
+      headers: headers, body: body);
+
+  if (res.statusCode != 200 && res.statusCode != 201) {
+    throw Exception("Failed to submit to INZ: ${res.body}");
+  }
+}

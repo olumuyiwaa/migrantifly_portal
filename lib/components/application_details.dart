@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 
 import '../api/api_delete.dart';
 import '../api/api_get.dart';
+import '../api/api_post.dart';
 import '../constants.dart';
 import '../models/class_applications.dart';
 import '../models/class_users.dart';
 import 'document_checklist_widget.dart';
-import 'document_details.dart';
 
 class ApplicationDetailsPreviewModal extends StatefulWidget {
   final Application application;
@@ -25,99 +25,8 @@ class ApplicationDetailsPreviewModal extends StatefulWidget {
       _ApplicationDetailsPreviewModalState();
 }
 
-// void _showEditApplicationFormModal(BuildContext context, Application application) {
-//   // TODO: Replace with Application edit form when ready.
-//   // Keeping a placeholder dialog to avoid runtime issues.
-//   showDialog(
-//     context: context,
-//     builder: (BuildContext context) {
-//       return AlertDialog(
-//         title: const Text("Edit Application"),
-//         content: const Text("Replace this with your Application edit form."),
-//         actions: [
-//           TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text("Close")),
-//         ],
-//       );
-//     },
-//   );
-// }
-void _showEditApplicationFormModal(BuildContext context, Application application) {
-  showDialog(
-    context: context,
-    builder: (context) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        width: 500,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Edit Application',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            const TextField(
-              decoration: InputDecoration(
-                labelText: 'Application Title',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Status',
-                border: OutlineInputBorder(),
-              ),
-              items: ['In Progress', 'Pending', 'Approved', 'Declined']
-                  .map((status) => DropdownMenuItem(
-                value: status,
-                child: Text(status),
-              ))
-                  .toList(),
-              onChanged: (value) {},
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              decoration: const InputDecoration(
-                labelText: 'Progress (%)',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Application updated successfully'),
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  },
-                  child: const Text('Save Changes'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
 //TODO: Quick Actions
-void _showQuickActions(BuildContext context) {
+void _showQuickActions(BuildContext context,String applicationId) {
   showDialog(
     context: context,
     builder: (context) => Dialog(
@@ -135,12 +44,28 @@ void _showQuickActions(BuildContext context) {
             ),
             const SizedBox(height: 20),
             _buildDialogAction(
+              icon: Icons.flag,
+              title: 'Application Stage',
+              subtitle: 'Update the application stage',
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            _buildDialogAction(
+              icon: Icons.check_circle,
+              title: 'Update Decision',
+              subtitle: 'Record decision for this application',
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            _buildDialogAction(
               icon: Icons.note_add,
               title: 'Add Note',
               subtitle: 'Add a note to this application',
               onTap: () {
                 Navigator.pop(context);
-                _addNote(context);
+                _addNote(context,applicationId);
               },
             ),
             _buildDialogAction(
@@ -221,42 +146,6 @@ Widget _buildDialogAction({
             Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),
           ],
         ),
-      ),
-    ),
-  );
-}
-Widget _buildQuickActionsCard(BuildContext context) {
-  return Card(
-    elevation: 0,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-      side: BorderSide(color: Colors.grey[200]!),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Quick Actions',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildActionButton(
-            icon: Icons.note_add,
-            label: 'Add Note',
-            onTap: () => _addNote(context),
-          ),
-          const SizedBox(height: 8),
-          _buildActionButton(
-            icon: Icons.upload_file,
-            label: 'Upload Document',
-            onTap: () => _uploadDocument(context),
-          ),
-        ],
       ),
     ),
   );
@@ -421,42 +310,108 @@ Widget _buildActionButton({
 }
 
 
-void _addNote(BuildContext context) {
+void _addNote(BuildContext context, String applicationId) {
   String note = '';
+  DateTime? dueDate;
+  String selectedType = "ppi"; // default value
+
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Add Note'),
-      content: SizedBox(
-        width: 400,
-        child: TextField(
-          maxLines: 4,
-          decoration: const InputDecoration(
-            hintText: 'Enter your note here...',
-            border: OutlineInputBorder(),
-          ),
-          onChanged: (value) => note = value,
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-            // Implement note saving logic
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Note added successfully'),
-                behavior: SnackBarBehavior.floating,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: const Text('Add Note',style: TextStyle(fontSize: 32),),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Dropdown for type
+              DropdownButtonFormField<String>(
+                value: selectedType,
+                decoration: const InputDecoration(
+                  labelText: "Select Type",
+                  border: OutlineInputBorder(),
+                ),
+                items: const [
+                  DropdownMenuItem(value: "ppi", child: Text("PPI")),
+                  DropdownMenuItem(value: "rfi", child: Text("RFI")),
+                  DropdownMenuItem(value: "inz", child: Text("Submit to INZ")),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    selectedType = value!;
+                  });
+                },
               ),
-            );
-          },
-          child: const Text('Add Note'),
+              const SizedBox(height: 12),
+
+              // Note text field
+              TextField(
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Enter your note here...',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) => note = value,
+              ),
+              const SizedBox(height: 12),
+
+              // Only show due date picker for PPI/RFI
+              if (selectedType == "ppi" || selectedType == "rfi")
+                ElevatedButton(
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: DateTime.now(),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        dueDate = picked;
+                      });
+                    }
+                  },
+                  child: Text(
+                    dueDate == null
+                        ? "Pick Due Date"
+                        : "Due: ${dueDate!.toLocal().toString().split(' ')[0]}",
+                  ),
+                ),
+            ],
+          ),
         ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+
+              if (selectedType == "ppi" || selectedType == "rfi") {
+                await postNote(applicationId, selectedType, note, dueDate);
+              } else if (selectedType == "inz") {
+                await submitToInz(applicationId, note);
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    selectedType == "inz"
+                        ? 'Submitted to INZ successfully'
+                        : 'Note added successfully',
+                  ),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -743,13 +698,12 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   icon: const Icon(
-                    Icons.edit,
+                    Icons.update,
                     color: Colors.blue,
                   ),
-                  label: const Text('Edit'),
+                  label: const Text('Update'),
                   onPressed: () {
-                    Navigator.pop(context);
-                    _showEditApplicationFormModal(context, widget.application);
+                    _showQuickActions(context, widget.application.id);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
