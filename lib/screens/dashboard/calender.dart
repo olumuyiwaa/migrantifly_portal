@@ -354,12 +354,20 @@ class _CalendarState extends State<Calendar> {
                                       fontSize: 18, fontWeight: FontWeight.bold)),
                               const SizedBox(height: 12),
                               ...deadlinesForDay.map((d) => ListTile(
+                                isThreeLine: true,
                                 leading: Icon(
                                   d.overdue ? Icons.warning : Icons.event,
                                   color: d.overdue ? Colors.red : Colors.blue,
                                 ),
                                 title: Text(d.deadline.description),
-                                subtitle: Text("Visa: ${d.visaType} | Stage: ${d.stage}"),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text("Visa: ${d.visaType}"),
+                                    Text("Stage: ${d.stage}"),
+                                    Text("Client ID: ${d.clientId}"),
+                                  ],
+                                ),
                                 trailing: Text(
                                   DateFormat('dd/MM').format(d.deadline.dueDate),
                                   style: const TextStyle(fontWeight: FontWeight.bold),

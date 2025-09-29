@@ -5,7 +5,9 @@ import '../models/class_documents.dart';
 
 class DocumentDetails extends StatelessWidget {
   final Document doc;
-  const DocumentDetails({super.key, required this.doc});
+  final VoidCallback onClose;
+  final bool isClient;
+  const DocumentDetails({super.key, required this.doc, required this.onClose, required this.isClient});
 
   @override
   Widget build(BuildContext context) {
@@ -58,13 +60,7 @@ class DocumentDetails extends StatelessWidget {
                         ],
                       ),
                     ),
-                    IconButton(
-                      onPressed: (){},//_clearSelection,
-                      icon: const Icon(Icons.close),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.grey[100],
-                      ),
-                    ),
+                    CloseButton(onPressed: onClose,),
                   ],
                 ),
               ],
@@ -119,9 +115,9 @@ class DocumentDetails extends StatelessWidget {
                     _buildDetailRow(Icons.storage, "File Size", "${(doc.fileSize / (1024 * 1024)).toStringAsFixed(2)} MB"),
                     _buildDetailRow(Icons.code, "MIME Type", doc.mimeType),
                   ]),
-
+                  if (!isClient)
                   const SizedBox(height: 24),
-
+                  if (!isClient)
                   // Client information
                   _buildDetailSection("Client Information", [
                     _buildDetailRow(Icons.person_outline, "Uploaded By",doc.clientId?.fullName ?? "N/A"),
@@ -273,6 +269,7 @@ IconData _getDocumentIcon(Document doc) {
       return Icons.insert_drive_file;
   }
 }
+
 Color _getDocumentColor(Document doc) {
   switch (doc.mimeType.toLowerCase()) {
     case 'application/pdf':

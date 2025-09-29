@@ -6,10 +6,44 @@ import '../models/class_visa_document_requirement.dart';
 import '../responsive.dart';
 import 'document_details.dart';
 
-class UploadedDocument extends StatelessWidget {
+class UploadedDocument extends StatefulWidget {
   final String applicationId;
   const UploadedDocument({super.key, required this.applicationId});
 
+  @override
+  State<UploadedDocument> createState() => _UploadedDocumentState();
+}
+
+class _UploadedDocumentState extends State<UploadedDocument> {
+  List<Document> docs =[];
+  bool isLoading =false;
+
+  @override
+  void initState() {
+    super.initState();
+    loadDocument();
+  }
+
+  Future<void> loadDocument() async {
+    if (mounted) setState(() => isLoading = true);
+    try {
+      docs = await fetchUploadedDocuments(widget.applicationId);
+      if (mounted && docs.isNotEmpty) {
+        setState(() => isLoading = false);
+      }
+      final freshDocs = await fetchUploadedDocuments(widget.applicationId);
+      // await WalletCache.saveWallet(freshWalletAccount);
+      if (mounted) {
+        setState(() {
+          docs = freshDocs;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading wallet: $e');
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
   @override
   Widget build(BuildContext context) {
     void _openApplicationDetailsDrawer(BuildContext context, Document doc) {
@@ -30,7 +64,7 @@ class UploadedDocument extends StatelessWidget {
               child: SizedBox(
                 width: drawerWidth,
                 height: double.infinity,
-                child:  DocumentDetails(doc: doc,),
+                child:  DocumentDetails(doc: doc,onClose: () {Navigator.pop(context);},isClient: true,),
               ),
             ),
           );
@@ -47,61 +81,48 @@ class UploadedDocument extends StatelessWidget {
         },
       );
     }
-    return FutureBuilder<List<Document>>(
-      future: fetchApplicationDocuments(applicationId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.blue,));
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        final docs = snapshot.data ?? [];
+    return (docs.isEmpty&&isLoading)?
+      Center(child: CircularProgressIndicator(color: Colors.blue,)):
+      docs.isEmpty? Text("Yet to upload any documents") : Wrap(
+      spacing: 2,
+      runSpacing: 2,
+      children: docs.map((doc) {
+        return SizedBox(
+          width: Responsive.isMobile(context)?MediaQuery.of(context).size.width-20:200,
+          child: InkWell(onTap: (){_openApplicationDetailsDrawer(context,doc);},child:  Card(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
 
-        return docs.isEmpty? Text("Yet to upload any documents") : Wrap(
-          spacing: 2,
-          runSpacing: 2,
-          children: docs.map((doc) {
-            return SizedBox(
-              width: Responsive.isMobile(context)?MediaQuery.of(context).size.width-20:200,
-              child: InkWell(onTap: (){_openApplicationDetailsDrawer(context,doc);},child:  Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+                  Icon(_getDocumentIcon(doc),size: 42,color: _getDocumentColor(doc),),
+                  const SizedBox(height: 4),
 
-                      Icon(_getDocumentIcon(doc),size: 42,color: _getDocumentColor(doc),),
-                      const SizedBox(height: 4),
-
-                      Text(
-                        doc.name,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        doc.status,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        doc.reviewNotes,
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                      )
-                    ],
+                  Text(
+                    doc.name,
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
                   ),
-                ),
-              )),
-            );
-          }).toList(),
+                  const SizedBox(height: 4),
+                  Text(
+                    doc.status,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    doc.reviewNotes,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  )
+                ],
+              ),
+            ),
+          )),
         );
-      },
+      }).toList(),
     );
   }
 }

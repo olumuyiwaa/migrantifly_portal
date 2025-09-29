@@ -357,7 +357,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
   Widget _buildDocumentDetailPanel() {
     final doc = documents[_selectedIndex];
 
-    return DocumentDetails(doc: doc,);
+    return DocumentDetails(doc: doc,onClose:_clearSelection,isClient: false,);
   }
 
   IconData _getDocumentIcon(Document doc) {
