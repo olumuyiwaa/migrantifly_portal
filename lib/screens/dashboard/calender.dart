@@ -75,10 +75,9 @@ class _CalendarState extends State<Calendar> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        color: Colors.white,
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -260,10 +259,7 @@ class _CalendarState extends State<Calendar> {
       );
 
   Widget _buildCalendarGrid() {
-    return SizedBox(
-      height: MediaQuery.of(context).size.height * 0.88,
-      child: SingleChildScrollView(
-        child:  !Responsive.isMobile(context)? Column(
+    return  !Responsive.isMobile(context)? Column(
           spacing: defaultPadding,
           children: [
             _buildCalendarRow([1, 2, 3, 4]),
@@ -280,9 +276,7 @@ class _CalendarState extends State<Calendar> {
             _buildCalendarRow([9, 10]),
             _buildCalendarRow([11, 12]),
           ],
-        ),
-      ),
-    );
+        );
   }
 
   Widget _buildCalendarRow(List<int> months) => Row(
@@ -338,43 +332,50 @@ class _CalendarState extends State<Calendar> {
                   setState(() => selectedDate = curr);
 
                   if (deadlinesForDay.isNotEmpty) {
-                    showModalBottomSheet(
+                    showDialog(
                       context: context,
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
                       builder: (context) {
-                        return Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(DateFormat.yMMMMd().format(curr),
-                                  style: const TextStyle(
-                                      fontSize: 18, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 12),
-                              ...deadlinesForDay.map((d) => ListTile(
-                                isThreeLine: true,
-                                leading: Icon(
-                                  d.overdue ? Icons.warning : Icons.event,
-                                  color: d.overdue ? Colors.red : Colors.blue,
-                                ),
-                                title: Text(d.deadline.description),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Visa: ${d.visaType}"),
-                                    Text("Stage: ${d.stage}"),
-                                    Text("Client ID: ${d.clientId}"),
-                                  ],
-                                ),
-                                trailing: Text(
-                                  DateFormat('dd/MM').format(d.deadline.dueDate),
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                              )),
-                            ],
+                        return AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
+                          title: Text(
+                            DateFormat.yMMMMd().format(curr),
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          content: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: deadlinesForDay.map((d) {
+                                return ListTile(
+                                  isThreeLine: true,
+                                  leading: Icon(
+                                    d.overdue ? Icons.warning : Icons.event,
+                                    color: d.overdue ? Colors.red : Colors.blue,
+                                  ),
+                                  title: Text(d.deadline.description),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text("Visa: ${d.visaType}"),
+                                      Text("Stage: ${d.stage}"),
+                                      Text("Client ID: ${d.clientId}"),
+                                    ],
+                                  ),
+                                  trailing: Text(
+                                    DateFormat('dd/MM').format(d.deadline.dueDate),
+                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: const Text("Close",style: TextStyle(color: Colors.red),),
+                            ),
+                          ],
                         );
                       },
                     );

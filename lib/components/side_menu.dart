@@ -46,6 +46,7 @@ class _SideMenuState extends State<SideMenu> {
   Widget build(BuildContext context) {
     return Drawer(
         backgroundColor: secondaryColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Stack(
           children: [
             ListView(
@@ -126,7 +127,6 @@ class _SideMenuState extends State<SideMenu> {
                     },
                     isActive: widget.pageIndex == 3,
                   ),
-                if (userRole.toLowerCase() != "client")
                   DrawerListTile(
                   title: "Consultations",
                   svgSrc: "assets/icons/consultations.svg",

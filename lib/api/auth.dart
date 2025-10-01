@@ -1,4 +1,5 @@
 // ignore_for_file: use_build_context_synchronously
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -21,11 +22,13 @@ Future<void> signInAuth(
   };
 
   try {
-    final response = await http.post(
-      Uri.parse('https://migrantifly-backend.onrender.com/api/auth/login'),
+    final response = await http
+        .post(
+      Uri.parse('$baseUrl/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: json.encode(body),
-    );
+    )
+        .timeout(const Duration(seconds: 15)); // ⏳ timeout
 
     if (response.statusCode == 200) {
       final Map<String, dynamic> data = json.decode(response.body);
@@ -45,7 +48,8 @@ Future<void> signInAuth(
       await prefs.setString('first_name', (profile['firstName'] ?? '').toString());
       await prefs.setString('last_name', (profile['lastName'] ?? '').toString());
       await prefs.setString('phone', (profile['phone'] ?? '').toString());
-      // Handle "Remember me" credentials for reAuth
+
+      // Handle "Remember me"
       if (rememberMe) {
         await prefs.setString('password', password);
         await prefs.setBool('remember_me', true);
@@ -84,6 +88,17 @@ Future<void> signInAuth(
         ),
       );
     }
+  } on TimeoutException {
+    // Handle timeout specifically
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          "Connection timed out. Please try again.",
+          textAlign: TextAlign.center,
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
   } catch (e, st) {
     debugPrint('Login error: $e');
     debugPrint('Stack: $st');
@@ -97,8 +112,8 @@ Future<void> signInAuth(
       ),
     );
   }
-
 }
+
 
 Future<void> reAuth() async {
   final prefs = await SharedPreferences.getInstance();

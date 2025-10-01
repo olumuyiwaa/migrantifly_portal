@@ -4,8 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../api/api_get.dart';
 import '../../components/consultation_page.dart';
-import '../../components/consultation_page.dart';
-// import '../../components/forms/consultation_details_form.dart';
 import '../../constants.dart';
 import '../../models/class_consultation.dart';
 import '../../models/class_users.dart';
@@ -213,7 +211,7 @@ class _ConsultationsState extends State<Consultations> {
                       SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          consultation.client.fullName ?? 'Unknown Client',
+                          consultation.client?.fullName ?? 'Unknown Client',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 12,
@@ -274,11 +272,11 @@ class _ConsultationsState extends State<Consultations> {
 
   Widget _buildConsultationAvatar(Consultation consultation) {
     // Use client's profile picture if available, otherwise use initials
-    if (consultation.client.image.isNotEmpty) {
+    if (consultation.client!.image.isNotEmpty) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Image.network(
-          consultation.client.image,
+          consultation.client!.image,
           width: 52,
           height: 52,
           fit: BoxFit.cover,
@@ -294,8 +292,8 @@ class _ConsultationsState extends State<Consultations> {
 
   Widget _buildInitialsAvatar(Consultation consultation) {
     String initials = '';
-    if (consultation.client.fullName.isNotEmpty) {
-      initials = consultation.client.fullName[0];
+    if (consultation.client!.fullName.isNotEmpty) {
+      initials = consultation.client!.fullName[0];
     } else {
       initials = 'C'; // Default to 'C' for Consultation
     }

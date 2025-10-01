@@ -135,15 +135,18 @@ class _ApplicationCardState extends State<ApplicationCard> {
                     ),
                     const SizedBox(height: 10),
                     Wrap(
+                      spacing: 8,runSpacing: 8,
                       children: widget.application.timeline
                           .map((event) => _timelineItem(event: event))
                           .toList(),
                     ),
                   ],
                 ),
+                if (!Responsive.isMobile(context))
                 Divider(),
 // DOCUMENT CHECKLIST
-                Column(
+                if (!Responsive.isMobile(context))
+                  Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(padding: EdgeInsets.only(left: 8),child: Text(
@@ -177,7 +180,55 @@ class _timelineItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(constraints: BoxConstraints(maxWidth: 240),child: Row(
+    return
+      Responsive.isMobile(context)?Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// vertical line with dot
+          Column(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              Container(
+                width: 2,
+                height: 40,
+                color: Colors.blue.withOpacity(0.4),
+              ),
+            ],
+          ),
+          const SizedBox(width: 10),
+
+          /// text
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(event.stage,
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
+                  if (event.notes != null)
+                    Text(
+                      event.notes!,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  Text(
+                    DateFormat("dd MMM yyyy").format(event.date!),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ):
+      ConstrainedBox(constraints: BoxConstraints(maxWidth:  220),child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         /// vertical line with dot

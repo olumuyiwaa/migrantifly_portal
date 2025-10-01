@@ -107,71 +107,78 @@ class _ConsultationPageState extends State<ConsultationPage> {
     try {
       final consultation = widget.consultation;
 
-      // Load users with better error handling
-      try {
-        users = await loadCachedUsers();
-        if (mounted && users.isNotEmpty) {
-          setState(() {});
-        }
+      // 1. Load cached users (don’t block on errors)
+      users = await loadCachedUsers().catchError((e) {
+        debugPrint('Error loading cached users: $e');
+        return <User>[]; // fallback
+      });
 
-        final freshUsers = await fetchUsers();
+      // 2. Fetch fresh users and consultations in parallel
+      final results = await Future.wait([
+        fetchUsers().catchError((e) {
+          debugPrint('Error fetching fresh users: $e');
+          return <User>[];
+        }),
+        fetchConsultations().catchError((e) {
+          debugPrint('Error fetching consultations: $e');
+          return <Consultation>[];
+        }),
+      ]);
+
+      final freshUsers = results[0] as List<User>;
+      final fetchedApplications = results[1] as List<Consultation>;
+
+      // Update cached users if fresh results available
+      if (freshUsers.isNotEmpty) {
+        users = freshUsers;
         await cacheUsers(freshUsers);
-
-        if (mounted) {
-          setState(() {
-            users = freshUsers;
-          });
-        }
-      } catch (e) {
-        debugPrint('Error loading users: $e');
-        // Continue with existing users if any
       }
 
-      // Fetch related applications
-      final fetchedApplications = await fetchConsultations();
-      final clientRelated = fetchedApplications.where((app) {
-        return app.client.id == consultation.client.id;
-      }).toList();
+      // 3. Filter applications related to this client
+      final clientId = consultation.client?.id;
+      final clientRelated = clientId == null
+          ? <Consultation>[]
+          : fetchedApplications.where((app) => app.client?.id == clientId).toList();
 
-      // Update state safely
-      if (mounted) {
-        setState(() {
-          consultationDetails = consultation;
-          fetchedUsers = users;
-          consultationType = consultation.type;
-          consultationNotes = consultation.notes;
-          consultationMethod = consultation.method;
-          consultationStatus = consultation.status;
-          consultationDuration = consultation.duration;
-          scheduledDate = consultation.scheduledDate;
-          visaPathways = consultation.visaPathways;
-          clientToken = consultation.clientToken;
+      // 4. Update state in a single batch
+      if (!mounted) return;
+      setState(() {
+        consultationDetails = consultation;
+        fetchedUsers = users;
 
-          // Client details
-          clientName = consultation.client.fullName;
-          clientEmail = consultation.client.email;
-          clientPhone = consultation.client.phoneNumber;
-          clientPhoto = consultation.client.image;
+        consultationType = consultation.type;
+        consultationNotes = consultation.notes;
+        consultationMethod = consultation.method;
+        consultationStatus = consultation.status;
+        consultationDuration = consultation.duration;
+        scheduledDate = consultation.scheduledDate;
+        visaPathways = consultation.visaPathways;
+        clientToken = consultation.clientToken;
 
-          // Adviser details
-          adviserName = consultation.adviser.fullName;
-          adviserEmail = consultation.adviser.email;
-          adviserPhone = consultation.adviser.phoneNumber;
-          adviserPhoto = consultation.adviser.image;
+        // Client details (safe null checks)
+        clientName = consultation.client?.fullName ?? '';
+        clientEmail = consultation.client?.email ?? '';
+        clientPhone = consultation.client?.phoneNumber ?? '';
+        clientPhoto = consultation.client?.image ?? '';
 
-          allApplications = clientRelated;
-          relatedApplications = allApplications;
+        // Adviser details (safe null checks)
+        adviserName = consultation.adviser?.fullName ?? '';
+        adviserEmail = consultation.adviser?.email ?? '';
+        adviserPhone = consultation.adviser?.phoneNumber ?? '';
+        adviserPhoto = consultation.adviser?.image ?? '';
 
-          _isLoading = false;
-        });
-      }
-    } catch (error) {
+        allApplications = clientRelated;
+        relatedApplications = clientRelated;
+
+        _isLoading = false;
+      });
+    } catch (error, st) {
       debugPrint("Error fetching consultation details: $error");
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      debugPrintStack(stackTrace: st);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   @override
   void initState() {

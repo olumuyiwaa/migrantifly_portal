@@ -46,24 +46,6 @@ class _ApplicationListFiltersState extends State<ApplicationListFilters> {
     widget.onFilterChanged(_selectedStatuses, selectedOption);
   }
 
-  void _showEventFormModal(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return Dialog(
-          insetPadding: const EdgeInsets.all(16.0),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.9,
-            height: MediaQuery.of(context).size.height * 0.9,
-            child: EventDetailsForm(
-              event: Application.empty(), isEditing: false, onSave: () {  },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -78,35 +60,12 @@ class _ApplicationListFiltersState extends State<ApplicationListFilters> {
             // Title
              Padding(
               padding: EdgeInsets.only(bottom: 16.0),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Application List Filter',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-
-                  if (!Responsive.isMobile(context))
-                    ElevatedButton.icon(
-                      icon: const Icon(
-                        Icons.add,
-                        color: Colors.white,
-                      ),
-                      label: const Text('Create Application'),
-                      style: ElevatedButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        _showEventFormModal(context);
-                      },
-                    ),
-                ],
+              child: Text(
+                'Application List Filter',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
 

@@ -363,12 +363,14 @@ Future<List<NotificationModel>> loadCachedNotifications() async {
 
 Future<List<Consultation>> fetchConsultations() async {
   final headers = await getHeaders();
-  int page = 1;
-  const int limit = 20;
   final List<Consultation> allConsultations = [];
-
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String  userRole = prefs.getString('role') ?? '';
+  String urlExtension = userRole == "client" ? "/my-consultations" : "";
+  int page = 1;
+  int limit = userRole == "client" ? 10: 20;
   while (true) {
-    final uri = Uri.parse('$baseUrl/consultation').replace(queryParameters: {
+    final uri = Uri.parse('$baseUrl/consultation$urlExtension').replace(queryParameters: {
       'page': '$page',
       'limit': '$limit',
     });

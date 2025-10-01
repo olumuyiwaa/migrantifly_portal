@@ -59,6 +59,7 @@ class _LoginPageState extends State<LoginPage> {
         ),
         child: Center(
           child: Card(
+            color: Colors.white,
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -137,7 +138,7 @@ class _LoginPageState extends State<LoginPage> {
                   // Right side with login form
                   Expanded(
                     flex: screenSize.width > 800 ? 4 : 1,
-                    child: Container(
+                    child: SingleChildScrollView(child:  Container(
                       color: Colors.white,
                       padding: const EdgeInsets.all(40.0),
                       child: Form(
@@ -292,7 +293,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ],
                       ),
-                    )),
+                    ))),
                   ),
                 ],
               ),

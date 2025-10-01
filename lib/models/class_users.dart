@@ -10,9 +10,6 @@ class User {
   final String countryLocated;
   final String fullAddress;
   final String representedCountry;
-  final List<String> countries;
-  final List<String> mediaFiles;
-  final List<String> bookmarkedEvents;
 
   User({
     required this.id,
@@ -21,9 +18,6 @@ class User {
     required this.email,
     required this.phoneNumber,
     required this.role,
-    required this.countries,
-    required this.mediaFiles,
-    required this.bookmarkedEvents,
     required this.representedCountry,
     required this.countryLocated,
     required this.fullAddress,
@@ -49,7 +43,7 @@ class User {
         ? profile['address'] as Map<String, dynamic>
         : null;
 
-    // Compose full name from nested profile if needed
+    // Full name composition
     final firstName = (profile?['firstName'] ?? '').toString();
     final lastName = (profile?['lastName'] ?? '').toString();
     final composedFullName = [firstName, lastName]
@@ -59,28 +53,23 @@ class User {
 
     return User(
       id: (json['_id'] ?? json['id'] ?? '').toString(),
-      createdAt: (json['createdAt'] ?? json['created_at'] ?? '').toString(),
+      createdAt: (json['createdAt'] ?? '').toString(),
       image: (json['image'] ?? '').toString(),
       fullName: (json['full_name'] ?? composedFullName).toString(),
       email: (json['email'] ?? '').toString(),
-      phoneNumber:
-      (json['phone_number'] ?? profile?['phone'] ?? '').toString(),
+      phoneNumber: (profile?['phone'] ?? '').toString(),
       role: (json['role'] ?? '').toString(),
 
-      // Lists (keep old keys if your legacy payloads are still used)
-      countries: _toStringList(json['interests'] ?? json['countries']),
-      mediaFiles: _toStringList(json['mediaFiles']),
-      bookmarkedEvents: _toStringList(json['bookmarkedEvents']),
-
-      // Derive from the new structure where possible, fallback to legacy keys
-      representedCountry: (json['countryRepresented'] ??
-          profile?['nationality'] ??
-          address?['country'] ??
-          '')
-          .toString(),
-      countryLocated: (json['countryLocated'] ?? address?['country'] ?? '')
-          .toString(),
-      fullAddress: ("${address?['street']}, ${address?['city']}, ${address?['state']}, ${address?['country']}, ${address?['postalCode']}" ?? '').toString(),
+      // Derived fields
+      representedCountry: (profile?['nationality'] ?? '').toString(),
+      countryLocated: (address?['country'] ?? '').toString(),
+      fullAddress: [
+        address?['street'],
+        address?['city'],
+        address?['state'],
+        address?['country'],
+        address?['postalCode']
+      ].where((s) => s != null && s.toString().trim().isNotEmpty).join(', '),
     );
   }
 
@@ -93,9 +82,6 @@ class User {
       'email': email,
       'phone_number': phoneNumber,
       'role': role,
-      'interests': countries,
-      'mediaFiles': mediaFiles,
-      'bookmarkedEvents': bookmarkedEvents,
       'countryRepresented': representedCountry,
       'countryLocated': countryLocated,
       'fullAddress': fullAddress,
@@ -111,9 +97,6 @@ class User {
       email: '',
       phoneNumber: '',
       role: '',
-      countries: const [],
-      mediaFiles: const [],
-      bookmarkedEvents: const [],
       representedCountry: '',
       countryLocated: '',
       fullAddress: '',

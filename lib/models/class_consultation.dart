@@ -2,7 +2,7 @@ import 'class_users.dart';
 
 class Consultation {
   final String id;
-  final User client;
+  final User? client;
   final User adviser;
   final String type;
   final DateTime scheduledDate;
@@ -17,7 +17,7 @@ class Consultation {
 
   Consultation({
     required this.id,
-    required this.client,
+    this.client,
     required this.adviser,
     required this.type,
     required this.scheduledDate,
@@ -34,7 +34,9 @@ class Consultation {
   factory Consultation.fromJson(Map<String, dynamic> json) {
     return Consultation(
       id: json['_id'] ?? '',
-      client: User.fromJson(json['clientId'] ?? {}),
+      client: (json['clientId'] is Map<String, dynamic>)
+          ? User.fromJson(json['clientId'])
+          : null,
       adviser: User.fromJson(json['adviserId'] ?? {}),
       type: json['type'] ?? '',
       scheduledDate: DateTime.tryParse(json['scheduledDate'] ?? '') ?? DateTime(1970),
@@ -55,7 +57,7 @@ class Consultation {
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
-      'clientId': client.toJson(),
+      'clientId': client?.toJson(),
       'adviserId': adviser.toJson(),
       'type': type,
       'scheduledDate': scheduledDate.toIso8601String(),

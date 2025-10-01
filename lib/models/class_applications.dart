@@ -15,6 +15,7 @@ class Application {
   final DateTime? decisionDate;
   final String? outcome;
   final String? decisionLetter;
+  final String? destinationCountry;
   final List<TimelineEntry> timeline;
   final List<Deadline> deadlines;
   final DateTime? createdAt;
@@ -33,6 +34,7 @@ class Application {
     this.decisionDate,
     this.outcome,
     this.decisionLetter,
+    this.destinationCountry,
     required this.timeline,
     required this.deadlines,
     required this.createdAt,
@@ -104,6 +106,17 @@ class Application {
     final clientRaw = json['clientId'];
     final adviserRaw = json['adviserId'];
 
+    String? destName;
+    final destRaw = json['destinationCountry'];
+    if (destRaw is Map<String, dynamic>) {
+      final nameRaw = destRaw['name'];
+      if (nameRaw is String && nameRaw.trim().isNotEmpty) {
+        destName = nameRaw;
+      }
+    } else if (destRaw is String && destRaw.trim().isNotEmpty) {
+      destName = destRaw;
+    }
+
     return Application(
       id: (json['_id'] ?? '').toString(),
       client: User.fromJson(
@@ -121,6 +134,7 @@ class Application {
       decisionDate: _parseDate(json['decisionDate']),
       outcome: json['outcome']?.toString(),
       decisionLetter: json['decisionLetter']?.toString(),
+      destinationCountry: destName,
       timeline: ((json['timeline'] as List?) ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(TimelineEntry.fromJson)
@@ -148,6 +162,7 @@ class Application {
       'decisionDate': decisionDate?.toIso8601String(),
       'outcome': outcome,
       'decisionLetter': decisionLetter,
+      'destinationCountry': destinationCountry,
       'timeline': timeline.map((t) => t.toJson()).toList(),
       'deadlines': deadlines.map((d) => d.toJson()).toList(),
       'createdAt': createdAt?.toIso8601String(),
@@ -169,6 +184,7 @@ class Application {
       decisionDate: null,
       outcome: null,
       decisionLetter: null,
+      destinationCountry: null,
       timeline: const [],
       deadlines: const [],
       createdAt: null,

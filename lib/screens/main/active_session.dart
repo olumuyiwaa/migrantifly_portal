@@ -13,6 +13,7 @@ import '../../responsive.dart';
 import '../dashboard/administration.dart';
 import '../dashboard/calender.dart';
 import '../../components/client_application_details.dart';
+import '../dashboard/client_consultations.dart';
 import '../dashboard/documents.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../dashboard/consultations.dart';
@@ -93,7 +94,7 @@ class _ActiveSessionState extends State<ActiveSession> {
       ),
       Events(),
       Calendar(),
-      Consultations(),
+      userRole == "client" ?ClientConsultations():Consultations(),
       DocumentsWidget(),
       Administration(),
       UserDetails(

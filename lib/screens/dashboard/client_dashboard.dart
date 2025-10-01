@@ -124,7 +124,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
     return RefreshIndicator(
       onRefresh: _fetchAllData,
       child:  SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           padding:  EdgeInsets.all(Responsive.isMobile(context)?8:16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,6 +159,14 @@ class _ClientDashboardState extends State<ClientDashboard> {
             flex: 2,
             child:Column(children:[_buildSectionHeader("My Applications", Icons.folder),
                   const SizedBox(height: 12),
+              if(_deadlines.isEmpty)Container(
+                  alignment: Alignment.center,
+                  height: 320,child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.folder,size: 120,color: Colors.grey,),
+                  Text("No Data Yet")
+                ],)),
                   ...dashboardData!.applications
                       .map((app) => ApplicationCard(application: app)),
                  ])),
@@ -167,19 +175,29 @@ class _ClientDashboardState extends State<ClientDashboard> {
                     Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        if(dashboardData!.recentPayments.isEmpty)Container(
-                            alignment: Alignment.center,
-                            height: 100,child: Text("No Data Yet")),
                         _buildSectionHeader("Recent Payments", Icons.credit_card),
                         const SizedBox(height: 12),
                         ...dashboardData!.recentPayments
                             .map((p) => ModernPaymentCard(payment: p)),
+                        if(dashboardData!.recentPayments.isEmpty)Container(
+                            alignment: Alignment.center,
+                            height: 240,child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                              Icon(Icons.credit_card,size: 100,color: Colors.grey,),
+                          Text("No Data Yet")
+                        ],)),
                         const SizedBox(height: 28),
                         _buildSectionHeader("Deadlines", Icons.event),
                         const SizedBox(height: 12),
                         if(_deadlines.isEmpty)Container(
                             alignment: Alignment.center,
-                            height: 100,child: Text("No Data Yet")),
+                            height: 240,child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.event_busy,size: 100,color: Colors.grey,),
+                            Text("No Data Yet")
+                          ],)),
                         ..._deadlines.map((deadline) => DeadlineCard(deadline: deadline)),
                       ],)))
                 ],
@@ -213,7 +231,7 @@ class _ClientDashboardState extends State<ClientDashboard> {
     final summary = dashboardData!.summary;
     final items = [
       ("Total Applications", summary.totalApplications.toString(), Icons.folder, Colors.blue),
-      ("Active Applications", summary.activeApplications.toString(), Icons.work, Colors.green),
+      ("Active Applications", summary.activeApplications.toString(), Icons.document_scanner_rounded, Colors.green),
       ("Notifications", summary.unreadNotifications.toString(), Icons.notifications, Colors.orange),
       ("Deadlines", summary.pendingDeadlines.toString(), Icons.event, Colors.red),
     ];
@@ -272,7 +290,7 @@ class ModernSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      clipBehavior: Clip.hardEdge,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [color.withOpacity(0.9), color.withOpacity(0.6)],
@@ -288,33 +306,52 @@ class ModernSummaryCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: Colors.white.withOpacity(0.2),
-            child: Icon(icon, color: Colors.white, size: 22),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          // Background decorative icon
+          Positioned(
+            top:Responsive.isMobile(context)?-24: -32,
+            right:Responsive.isMobile(context)?-24: -32,
+            child: Icon(
+              icon,
+              color: Colors.white.withOpacity(0.08),
+              size: Responsive.isMobile(context)?100: 160,
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: Responsive.isMobile(context)?12:14,
-              color: Colors.white.withOpacity(0.85),
-            ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 22,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                child: Icon(icon, color: Colors.white, size: 22),
+              ),
+              const SizedBox(height: 14),
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: Responsive.isMobile(context)?12:14,
+                  color: Colors.white.withOpacity(0.85),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        )
+      ],),
     );
   }
 }

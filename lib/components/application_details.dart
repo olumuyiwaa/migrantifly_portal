@@ -525,7 +525,7 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                         _buildDetailItem(Icons.description, 'Visa Type', _nonEmpty(app.visaType)),
                         _buildDetailItem(Icons.flag, 'Stage', _nonEmpty(app.stage)),
                         _buildDetailItem(Icons.trending_up, 'Progress', "${app.progress}%"),
-                        _buildDetailItem(Icons.confirmation_number, 'Consultation ID', _nonEmpty(app.consultationId)),
+                        _buildDetailItem(Icons.confirmation_number, 'Destination Country', _nonEmpty(app.destinationCountry)),
                       ])),
                       Expanded(child:_buildSection('Adviser', [
                         _buildDetailItem(Icons.person_outline, 'Name', _nonEmpty(app.adviser.fullName)),
