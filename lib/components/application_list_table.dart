@@ -1,16 +1,15 @@
 // dart
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-import '../api/api_delete.dart';
 import '../api/api_get.dart';
 import '../constants.dart';
 import '../models/class_applications.dart';
-import '../models/class_users.dart';
 import '../responsive.dart';
-import 'application_details.dart'; // If unused, you can remove this import.
+import 'application_details.dart';
 
 class ApplicationListTable extends StatefulWidget {
-  final List<String> filter; // Filters applied to visaType (adjust if needed)
+  final List<String> filter;
   final String userID;
 
   const ApplicationListTable({
@@ -56,7 +55,7 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
 
     try {
       // Cached first
-      final cached = await loadCachedEvents(); // TODO: replace with loadCachedApplications()
+      final cached = await loadCachedApplications();
       if (cached.isNotEmpty && mounted) {
         final userApps = _filterByUser(cached);
         setState(() {
@@ -66,10 +65,10 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
       }
 
       // Fresh data
-      final fresh = await getFeaturedEvents(); // TODO: replace with getApplications()
+      final fresh = await getFeaturedApplications();
       if (!mounted) return;
 
-      await cacheEvents(fresh); // TODO: replace with cacheApplications(fresh)
+      await cacheApplications(fresh);
 
       if (!mounted) return;
 
@@ -117,46 +116,6 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
             height: MediaQuery.of(context).size.height * 0.9,
             child: ApplicationDetailsPreviewModal(application: app),
           ),
-        );
-      },
-    );
-  }
-
-  Future<void> _showDeleteApplicationModal(BuildContext context, Application app) {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        final titleLine = "${app.clientDisplayName} • ${app.visaType}";
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          title: Text("Delete: $titleLine"),
-          content: const Text(
-            "Are you sure you want to delete this application?",
-            textAlign: TextAlign.center,
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text(
-                "Cancel",
-                style: TextStyle(color: Colors.green),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text("Delete", style: TextStyle(color: Colors.red)),
-              onPressed: () async {
-                // TODO: replace with removeApplication(context: context, applicationID: app.id);
-                await removeApplication(context: context, applicationID: app.id);
-                if (context.mounted) {
-                  Navigator.of(context).pop();
-                }
-                _loadApplications();
-              },
-            ),
-          ],
         );
       },
     );
@@ -215,7 +174,16 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
   @override
   Widget build(BuildContext context) {
     return widget.userID.isNotEmpty && _filteredApplications.isEmpty && !_isLoading
-        ? const SizedBox.shrink()
+        ?  Container(
+      height: 692,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 12,
+        children: [
+          SvgPicture.asset("assets/icons/applications.svg",height: 120,color: Colors.grey),
+          Text("No Application(s) At The Moment")
+        ]),)
         : Container(
       decoration: const BoxDecoration(
         color: secondaryColor,
@@ -378,10 +346,6 @@ class _ApplicationListTableState extends State<ApplicationListTable> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  IconButton(
-                                    onPressed: () => _showDeleteApplicationModal(context, app),
-                                    icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                                  ),
                                   IconButton(
                                     onPressed: () => _showApplicationDetailsModal(context, app),
                                     icon: const Icon(Icons.file_open, size: 18),

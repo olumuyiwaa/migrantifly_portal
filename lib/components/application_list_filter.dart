@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../api/api_get.dart';
 import '../constants.dart';
 import '../models/class_applications.dart';
 import '../responsive.dart';
@@ -31,12 +32,51 @@ class _ApplicationListFiltersState extends State<ApplicationListFilters> {
     'ppi_received',
     'decision'
   ];
+  @override
+  void initState() {
+    super.initState();
+    _loadApplications();
+  }
+  bool isLoading = false;
+  List<Application> applications= [];
+  Future<void> _loadApplications() async {
+    setState(() {
+      isLoading = true;
+    });
 
-  // Status options with corresponding counts
-  final Map<String, int> _statusCounts = {
-    'Completed': 581,
-    'Upcoming': 1000,
-  };
+    try {
+      // Cached first
+      final cached = await loadCachedApplications();
+      if (cached.isNotEmpty && mounted) {
+        setState(() {
+          applications = cached;
+        });
+      }
+
+      // Fresh data
+      final fresh = await getFeaturedApplications();
+      if (!mounted) return;
+
+      await cacheApplications(fresh);
+
+      if (!mounted) return;
+
+      setState(() {
+        applications = fresh;
+        isLoading = false;
+      });
+    } catch (error) {
+      debugPrint("Error loading applications: $error");
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+
 
   // Selected filters
   List<String> selectedOption = ['All'];
@@ -48,6 +88,11 @@ class _ApplicationListFiltersState extends State<ApplicationListFilters> {
 
   @override
   Widget build(BuildContext context) {
+    // Status options with corresponding counts
+    final Map<String, int> _statusCounts = {
+      'Completed': applications.where((a) => a.stage == "decision").length,
+      'Ongoing': applications.where((a) => a.stage != "decision").length,
+    };
     return Container(
         decoration: BoxDecoration(
           color: secondaryColor,
@@ -273,7 +318,6 @@ class _ApplicationListFiltersState extends State<ApplicationListFilters> {
                                 children: [
                                   ..._statusCounts.entries
                                       .where((entry) =>
-                                          entry.value > 0 &&
                                           _selectedStatuses.contains(entry.key))
                                       .map((entry) {
                                     return Row(

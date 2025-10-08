@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
 import '../models/class_documents.dart';
@@ -8,6 +9,45 @@ class DocumentDetails extends StatelessWidget {
   final VoidCallback onClose;
   final bool isClient;
   const DocumentDetails({super.key, required this.doc, required this.onClose, required this.isClient});
+  Future<void> _openDocumentUrl(BuildContext context, Document doc) async {
+    // TODO: replace with your actual URL field, e.g. doc.url or doc.fileUrl
+    final String? url = doc.fileUrl;
+
+    if (url == null || url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No URL available for ${doc.name}')),
+      );
+      return;
+    }
+
+    final uri = Uri.parse(url);
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        // Prefer opening in an external app (browser or native viewer)
+        final ok = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+          webOnlyWindowName: '_blank',
+        );
+
+        // Fallback to in-app browser view if external app fails
+        if (!ok) {
+          final ok2 = await launchUrl(
+            uri,
+            mode: LaunchMode.inAppBrowserView,
+          );
+          if (!ok2) throw Exception('Launching URL failed');
+        }
+      } else {
+        throw Exception('Cannot handle URL');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to open: $e')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +100,13 @@ class DocumentDetails extends StatelessWidget {
                         ],
                       ),
                     ),
-                    CloseButton(onPressed: onClose,),
+                    CloseButton(onPressed: onClose,style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      padding: const EdgeInsets.all(12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    )),
                   ],
                 ),
               ],
@@ -147,10 +193,7 @@ class DocumentDetails extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          // TODO: open document in browser/viewer
-                          debugPrint("Opening document: ${doc.name}");
-                        },
+                        onPressed: () => _openDocumentUrl(context, doc),
                         icon: const Icon(Icons.open_in_new),
                         label: const Text("Open Document"),
                       ),

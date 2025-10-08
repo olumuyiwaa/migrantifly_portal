@@ -1,4 +1,6 @@
+import 'package:Migrantifly/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import '../../api/api_get.dart';
 import '../../components/document_details.dart';
 import '../../models/class_documents.dart';
@@ -96,7 +98,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
           // Side panel - only shows when document is selected
           if (_selectedIndex != -1 && _selectedIndex < documents.length)
             Container(
-              width: 400,
+              width:Responsive.isMobile(context)?360: 400,
               decoration: const BoxDecoration(
                 border: Border(
                   left: BorderSide(color: Colors.grey, width: 0.5),
@@ -117,11 +119,11 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
     }
 
     if (documents.isEmpty) {
-      return const Center(
+      return  Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.folder_open, size: 64, color: Colors.grey),
+            SvgPicture.asset("assets/icons/documents.svg",height: 120,color: Colors.grey),
             SizedBox(height: 16),
             Text(
               "No documents uploaded",
@@ -173,7 +175,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
                 crossAxisCount: _getCrossAxisCount(context),
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                childAspectRatio: 0.8,
+                childAspectRatio: 1,
               ),
               itemCount: documents.length,
               itemBuilder: (context, index) {
@@ -200,157 +202,171 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
   Widget _buildDocumentCard(Document doc, int index) {
     final isSelected = _selectedIndex == index;
 
-    return GestureDetector(
-      onTap: () => _onDocumentTap(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        child: Card(
-          elevation: isSelected ? 8 : 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Colors.white,
-              border: isSelected
-                  ? Border.all(color: primaryColor, width: 2)
-                  : null,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Document icon and status
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth;
+        final scale = (cardWidth / 320).clamp(0.75, 1.1);
+
+        final double bodyPadding = (14 * scale).clamp(10, 16).toDouble();
+        final double iconPad = (6 * scale).clamp(4, 8).toDouble();
+        final double docIconSize = (22 * scale).clamp(18, 24).toDouble();
+        final double smallIconSize = (12 * scale).clamp(10, 14).toDouble();
+        final double downloadIconSize = (18 * scale).clamp(16, 20).toDouble();
+
+        return GestureDetector(
+          onTap: () => _onDocumentTap(index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            child: Card(
+              elevation: isSelected ? 8 : 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Container(
+                padding: EdgeInsets.all(bodyPadding),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  border: isSelected
+                      ? Border.all(color: primaryColor, width: 2)
+                      : null,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _getDocumentColor(doc).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        _getDocumentIcon(doc),
-                        color: _getDocumentColor(doc),
-                        size: 24,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(doc.status),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        doc.status.toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
+                    // Document icon and status
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(iconPad),
+                          decoration: BoxDecoration(
+                            color: _getDocumentColor(doc).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            _getDocumentIcon(doc),
+                            color: _getDocumentColor(doc),
+                            size: docIconSize,
+                          ),
                         ),
-                      ),
+                        Container
+                          (
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _getStatusColor(doc.status),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            doc.status.toUpperCase(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
 
-                const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                // Document type
-                Text(
-                  doc.type.toUpperCase(),
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                // Document name
-                Expanded(
-                  child: Text(
-                    doc.name,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                // File size and client
-                Row(
-                  children: [
-                    Icon(Icons.storage, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
+                    // Document type
                     Text(
-                      "${(doc.fileSize / (1024 * 1024)).toStringAsFixed(1)} MB",
-                      style: TextStyle(
+                      doc.type.toUpperCase(),
+                      style: const TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
                     ),
-                    const Spacer(),
-                    Icon(Icons.person, size: 14, color: Colors.grey[600]),
-                    const SizedBox(width: 4),
-                    Flexible(
+
+                    const SizedBox(height: 4),
+
+                    // Document name
+                    Expanded(
                       child: Text(
-                        doc.clientId?.fullName ?? "N/A",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                        doc.name,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ],
-                ),
 
-                const SizedBox(height: 8),
+                    const SizedBox(height: 8),
 
-                // Action buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => _onDocumentTap(index),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                    // File size and client
+                    Row(
+                      children: [
+                        Icon(Icons.storage, size: smallIconSize, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          "${(doc.fileSize / (1024 * 1024)).toStringAsFixed(1)} MB",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey[600],
                           ),
-                          backgroundColor: isSelected ? primaryColor : null,
                         ),
-                        child: Text(
-                          isSelected ? "Selected" : "Select",
-                          style: const TextStyle(fontSize: 12),
+                        const Spacer(),
+                        Icon(Icons.person, size: smallIconSize, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            doc.clientId?.fullName ?? "N/A",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: () => _downloadDocument(doc),
-                      icon: const Icon(Icons.download, size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.grey[100],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+
+                    const SizedBox(height: 8),
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => _onDocumentTap(index),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              backgroundColor: isSelected ? primaryColor : null,
+                            ),
+                            child: Text(
+                              isSelected ? "Selected" : "Select",
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          onPressed: () => _downloadDocument(doc),
+                          icon: Icon(Icons.download, size: downloadIconSize),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.grey[100],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

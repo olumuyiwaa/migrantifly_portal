@@ -416,46 +416,7 @@ void _addNote(BuildContext context, String applicationId) {
   );
 }
 
-Future<void> _showDeleteApplicationFormModal(BuildContext context, Application application) {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false,
-    builder: (BuildContext context) {
-      final titleLine = "${application.clientDisplayName} • ${application.displayVisaTypeTitle}";
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        title: Text("Delete: $titleLine"),
-        content: const Text(
-          "Are you sure you want to delete this application?",
-          textAlign: TextAlign.center,
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text(
-              "Cancel",
-              style: TextStyle(color: Colors.green),
-            ),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          TextButton(
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-            onPressed: () {
-              // TODO: Implement removeApplication API. The current call targets events.
-              // Example:
-              // removeApplication(context: context, applicationID: application.id);
-              removeApplication(
-                context: context,
-                applicationID: application.id,
-              );
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
+
 
 class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPreviewModal> {
   List<User> selectedStaffs = [];
@@ -671,49 +632,22 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
               color: Colors.grey.withOpacity(0.05),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(
-                    Icons.delete,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'Delete',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _showDeleteApplicationFormModal(context, widget.application);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+            child:  ElevatedButton.icon(
+              icon: const Icon(
+                Icons.update,
+                color: Colors.blue,
+              ),
+              label: const Text('Update'),
+              onPressed: () {
+                _showQuickActions(context, widget.application.id);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  icon: const Icon(
-                    Icons.update,
-                    color: Colors.blue,
-                  ),
-                  label: const Text('Update'),
-                  onPressed: () {
-                    _showQuickActions(context, widget.application.id);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(width: 12),

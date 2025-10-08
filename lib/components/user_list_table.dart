@@ -31,41 +31,6 @@ class _UserListTableState extends State<UserListTable> {
   List<User> allUser = [];
   bool _isLoading = false;
 
-  Future<void> showDeleteDialog(BuildContext context, User user) async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          title: Text("Delete: ${user.fullName}"),
-          content: Text("Are You Sure You Want To Delete This user", textAlign: TextAlign.center,),
-          actions: <Widget>[
-            TextButton(
-              child: Text(
-                "Cancel",
-                style: TextStyle(color: Colors.green),
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text("Delete", style: TextStyle(color: Colors.red)),
-              onPressed: () {
-                removeUser(
-                  context: context,
-                  userID: user.id,
-                );
-                _fetchAllUsers();
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -294,15 +259,6 @@ class _UserListTableState extends State<UserListTable> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             spacing: 4,
                             children: [
-                              IconButton(
-                                  onPressed: () {
-                                    showDeleteDialog(context, user);
-                                  },
-                                  icon: Icon(
-                                    Icons.delete,
-                                    size: 18,
-                                    color: Colors.red,
-                                  )),
                               IconButton(
                                   onPressed: () {
                                     _showUserDetailsModal(

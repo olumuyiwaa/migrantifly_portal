@@ -1,8 +1,10 @@
 import 'package:Migrantifly/responsive.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'dart:convert';
 
 import '../../api/api_get.dart';
+import '../../api/api_post.dart';
 import '../../models/class_consultation.dart';
 
 // Consultations List Screen
@@ -765,8 +767,7 @@ class ConsultationDetailsDialog extends StatelessWidget {
               _buildDetailRow(Icons.email, 'Email', consultation.adviser!.email),
             ],
 
-            if (consultation.visaPathways != null &&
-                consultation.visaPathways!.isNotEmpty) ...[
+            if (consultation.visaPathways.isNotEmpty) ...[
               const Divider(height: 32),
               Text(
                 'Recommended Visa Pathways',
@@ -776,7 +777,7 @@ class ConsultationDetailsDialog extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-              ...consultation.visaPathways!.map(
+              ...consultation.visaPathways.map(
                     (pathway) => Container(
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
@@ -791,7 +792,7 @@ class ConsultationDetailsDialog extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          pathway,
+                          "${pathway.capitalizeWords()} Pathway",
                           style: TextStyle(
                             fontWeight: FontWeight.w500,
                             color: Colors.grey[800],
@@ -804,7 +805,7 @@ class ConsultationDetailsDialog extends StatelessWidget {
               ),
             ],
 
-            if (consultation.notes != null && consultation.notes!.isNotEmpty) ...[
+            if (consultation.notes.isNotEmpty) ...[
               const Divider(height: 32),
               Text(
                 'Notes',
@@ -822,7 +823,7 @@ class ConsultationDetailsDialog extends StatelessWidget {
                   border: Border.all(color: Colors.grey[200]!),
                 ),
                 child: Text(
-                  consultation.notes!,
+                  consultation.notes,
                   style: TextStyle(
                     height: 1.5,
                     color: Colors.grey[700],
@@ -832,22 +833,103 @@ class ConsultationDetailsDialog extends StatelessWidget {
             ],
 
             const SizedBox(height: 32),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 16,
+            Row(
+                spacing: 12,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                ElevatedButton(
+                  onPressed: (){
+                      String? selectedVisaType;
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return StatefulBuilder(
+                            builder: (context, setState) {
+                              return AlertDialog(
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                title: const Text('Apply for visa'),
+                                content: SizedBox(
+                                  width: 400,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      SvgPicture.asset("assets/icons/applications.svg",height: 64,color: Colors.grey),
+                                      const SizedBox(height: 16),
+
+                                      // Dropdown for selecting type
+                                      DropdownButtonFormField<String>(
+                                        decoration: const InputDecoration(
+                                          labelText: "Visa Type",
+                                          border: OutlineInputBorder(),
+                                        ),
+                                        value: selectedVisaType,
+                                        items: consultation.visaPathways
+                                            .map((type) =>
+                                            DropdownMenuItem(value: type, child: Text(type.capitalizeWords())))
+                                            .toList(),
+                                        onChanged: (value) => setState(() => selectedVisaType = value),
+                                      ),
+
+                                    ],
+                                  ),
+                                ),
+                                actions: [
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: selectedVisaType != null
+                                        ? () {postApplication(context,consultation.id,selectedVisaType!);}
+                                        : null,
+                                    child:  Text('Submit',style: TextStyle(color: selectedVisaType != null ? Colors.white : Colors.grey),),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  child: const Text('Create Application',style: TextStyle(color: Colors.white),),
                 ),
-                child: const Text('Close'),
-              ),
-            ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('Close'),
+                )
+              ],),
           ],
         ),
       ),
@@ -914,4 +996,13 @@ class ConsultationDetailsDialog extends StatelessWidget {
       method == 'in-person'
           ? 'In-Person'
           : method[0].toUpperCase() + method.substring(1);
+}
+
+extension StringCasingExtension on String {
+  String capitalizeWords() {
+    return split("_")
+        .map((word) =>
+    word.isNotEmpty ? "${word[0].toUpperCase()}${word.substring(1)}" : "")
+        .join(" ");
+  }
 }

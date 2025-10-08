@@ -415,7 +415,7 @@ Future<List<Consultation>> loadCachedConsultations() async {
 
 
 //Application
-Future<List<Application>> getFeaturedEvents() async {
+Future<List<Application>> getFeaturedApplications() async {
   final headers = await getHeaders();
   int page = 1;
   const int limit = 20;
@@ -452,13 +452,13 @@ Future<List<Application>> getFeaturedEvents() async {
 
 
 //store application
-Future<void> cacheEvents(List<Application> events) async {
+Future<void> cacheApplications(List<Application> events) async {
   final prefs = await SharedPreferences.getInstance();
   final encoded = events.map((r) => jsonEncode(r.toJson())).toList();
   await prefs.setStringList('cached_applications', encoded);
 }
 
-Future<List<Application>> loadCachedEvents() async {
+Future<List<Application>> loadCachedApplications() async {
   final prefs = await SharedPreferences.getInstance();
   final data = prefs.getStringList('cached_applications');
   if (data == null) return [];

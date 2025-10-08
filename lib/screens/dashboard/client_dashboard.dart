@@ -1,6 +1,7 @@
 import 'package:Migrantifly/components/deadline_card.dart';
 import 'package:Migrantifly/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -162,10 +163,11 @@ class _ClientDashboardState extends State<ClientDashboard> {
               if(_deadlines.isEmpty)Container(
                   alignment: Alignment.center,
                   height: 320,child: Column(
+                spacing: 12,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.folder,size: 120,color: Colors.grey,),
-                  Text("No Data Yet")
+                  SvgPicture.asset("assets/icons/applications.svg",height: 120,color: Colors.grey),
+                  Text("No Applications Yet")
                 ],)),
                   ...dashboardData!.applications
                       .map((app) => ApplicationCard(application: app)),
@@ -181,21 +183,23 @@ class _ClientDashboardState extends State<ClientDashboard> {
                             .map((p) => ModernPaymentCard(payment: p)),
                         if(dashboardData!.recentPayments.isEmpty)Container(
                             alignment: Alignment.center,
-                            height: 240,child: Column(
+                            height: 240,child: Column(                spacing: 12,
+
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                              Icon(Icons.credit_card,size: 100,color: Colors.grey,),
-                          Text("No Data Yet")
+                            SvgPicture.asset("assets/icons/transactions.svg",height: 120,color: Colors.grey),
+                          Text("No Payments Yet")
                         ],)),
                         const SizedBox(height: 28),
                         _buildSectionHeader("Deadlines", Icons.event),
                         const SizedBox(height: 12),
                         if(_deadlines.isEmpty)Container(
                             alignment: Alignment.center,
-                            height: 240,child: Column(
+                            height: 240,child: Column(                spacing: 12,
+
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.event_busy,size: 100,color: Colors.grey,),
+                            SvgPicture.asset("assets/icons/calendar.svg",height: 120,color: Colors.grey),
                             Text("No Data Yet")
                           ],)),
                         ..._deadlines.map((deadline) => DeadlineCard(deadline: deadline)),

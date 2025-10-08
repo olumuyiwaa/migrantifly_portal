@@ -1,3 +1,4 @@
+import 'package:Migrantifly/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_delete.dart';
 import '../api/api_get.dart';
+import '../api/api_update.dart';
 import '../constants.dart';
 import '../models/class_consultation.dart';
 import '../models/class_applications.dart';
@@ -50,45 +52,361 @@ class _ConsultationPageState extends State<ConsultationPage> {
   bool _isLoading = true;
   String userID = "";
 
-  void _showEditConsultationFormModal(BuildContext context, Consultation consultation) {
+  void _showEditConsultationFormModal(
+      BuildContext context, Consultation consultation) {
+    final TextEditingController notesController = TextEditingController();
+    final TextEditingController visaPathwaysController = TextEditingController();
+    bool proceedWithApplication = false;
+
+    Future<void> _saveChanges() async {
+      try {
+        await completeConsultation(
+          context: context,
+          consultationId: consultation.id,
+          notes: notesController.text.trim(),
+          visaPathways: visaPathwaysController.text
+              .split(',')
+              .map((e) => e.trim())
+              .where((e) => e.isNotEmpty)
+              .toList(),
+          proceedWithApplication: proceedWithApplication,
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        // Use StatefulBuilder to handle checkbox state updates
+        bool localProceedWithApplication = proceedWithApplication;
+
+        // Parse existing visa pathways
+        List<String> selectedVisaTypes = visaPathwaysController.text
+            .split(',')
+            .map((e) => e.trim().toLowerCase())
+            .where((e) => e.isNotEmpty)
+            .toList();
+
+        final availableVisaTypes = ['work', 'partner', 'student', 'residence', 'visitor', 'business'];
+
         return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           insetPadding: const EdgeInsets.all(16.0),
           child: Container(
-            width: MediaQuery.of(context).size.width * 0.9,
+            width: MediaQuery.of(context).size.width * (Responsive.isMobile(context)? 0.9:0.6),
             height: MediaQuery.of(context).size.height * 0.9,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
             child: Column(
               children: [
-                AppBar(
-                  title: const Text('Edit Consultation'),
-                  automaticallyImplyLeading: false,
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Close'),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      children: [
-                        const Text('Consultation edit form would go here'),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: () {
-                            // Handle save logic here
-                            widget.onChange();
-                            _fetchConsultationDetails();
-                            Navigator.of(context).pop();
-                          },
-                          child: const Text('Save Changes'),
-                        ),
+                // Modern header with blue gradient
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.blue.shade600,
+                        Colors.blue.shade400,
                       ],
                     ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: AppBar(
+                    title: const Text(
+                      'Update Consultation',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,color: Colors.white
+                      ),
+                    ),
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    actions: [
+                      IconButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.all(12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                        tooltip: 'Close',
+                      ),
+                      SizedBox(width: 8,)
+                    ],
+                  ),
+                ),
+
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: StatefulBuilder(
+                      builder: (context, setState) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Notes field with improved styling
+                            Text(
+                              'Notes',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: notesController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter consultation notes...',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(
+                                    color: Colors.blue.shade600,
+                                    width: 2,
+                                  ),
+                                ),
+                                filled: true,
+                                fillColor: Theme.of(context).cardColor,
+                                contentPadding: const EdgeInsets.all(16),
+                              ),
+                              maxLines: 8,
+                              minLines: 5,
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Visa pathways with chips
+                            Text(
+                              'Visa Pathways',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).textTheme.bodyLarge?.color,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Select all applicable visa types',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Theme.of(context).cardColor,
+                              ),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: availableVisaTypes.map((visaType) {
+                                  final isSelected = selectedVisaTypes.contains(visaType);
+                                  return FilterChip(
+                                    label: Text(
+                                      visaType.toUpperCase(),
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Theme.of(context).textTheme.bodyLarge?.color,
+                                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                      ),
+                                    ),
+                                    selected: isSelected,
+                                    onSelected: (selected) {
+                                      setState(() {
+                                        if (selected) {
+                                          selectedVisaTypes.add(visaType);
+                                        } else {
+                                          selectedVisaTypes.remove(visaType);
+                                        }
+                                        // Update the controller
+                                        visaPathwaysController.text = selectedVisaTypes.join(', ');
+                                      });
+                                    },
+                                    selectedColor: Colors.blue.shade600,
+                                    checkmarkColor: Colors.white,
+                                    backgroundColor: Colors.grey.shade100,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      side: BorderSide(
+                                        color: isSelected
+                                            ? Colors.blue.shade600
+                                            : Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+
+                            const SizedBox(height: 24),
+
+                            // Checkbox with card background
+                            InkWell(
+                              onTap: () {
+                                setState(() {
+                                  localProceedWithApplication = !localProceedWithApplication;
+                                  proceedWithApplication = localProceedWithApplication;
+                                });
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: localProceedWithApplication
+                                        ? Colors.blue.shade600
+                                        : Colors.grey.shade300,
+                                    width: localProceedWithApplication ? 2 : 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: localProceedWithApplication
+                                      ? Colors.blue.shade50
+                                      : Theme.of(context).cardColor,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Checkbox(
+                                      activeColor: Colors.blue,
+                                      value: localProceedWithApplication,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          localProceedWithApplication = value ?? false;
+                                          proceedWithApplication = localProceedWithApplication;
+                                        });
+                                      },
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Proceed with Application',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Theme.of(context).textTheme.bodyLarge?.color,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Mark this consultation as ready to proceed',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+                // Bottom action bar
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardColor,
+                    border: Border(
+                      top: BorderSide(
+                        color: Colors.grey.shade200,
+                        width: 1,
+                      ),
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await _saveChanges();
+                            widget.onChange();
+                            _fetchConsultationDetails();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Save Changes',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -204,21 +522,6 @@ class _ConsultationPageState extends State<ConsultationPage> {
       }
     } catch (e) {
       debugPrint('Error getting user info: $e');
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'scheduled':
-        return Colors.blue;
-      case 'completed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      case 'in-progress':
-        return Colors.orange;
-      default:
-        return Colors.grey;
     }
   }
 
@@ -388,8 +691,15 @@ class ConsultationHeader extends StatelessWidget {
                 // Action button
                 if (!consultationStatus.toLowerCase().contains("complete"))
                   IconButton(
+                    style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    padding: const EdgeInsets.all(12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                     onPressed: onEdit,
-                    icon: Icon(Icons.fact_check, color: Colors.green[600]),
+                    icon: Icon(Icons.edit_note_sharp, color: Colors.white),
                     tooltip: "Complete",
                   ),
               ],
@@ -474,7 +784,7 @@ class ConsultationContent extends StatelessWidget {
         children: [
           // Main content area (left side)
           Expanded(
-            flex: 3,
+            flex: 5,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -508,7 +818,7 @@ class ConsultationContent extends StatelessWidget {
 
           // Sidebar (right side)
           Expanded(
-            flex: 1,
+            flex: 2,
             child: Column(
               children: [
                 ConsultationInfoBox(

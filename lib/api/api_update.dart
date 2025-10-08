@@ -5,154 +5,75 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'api_helper.dart';
 
-
-
-Future<void> updateCountry({
+Future<void> completeConsultation({
   required BuildContext context,
-  required http.MultipartFile? coverImage,
-  required String userID,
-  required String countryTitle,
-  required String countryID,
-  required String countryDescription,
-  required String countryCapital,
-  required String countryCurrency,
-  required String countryPopulation,
-  required String countryDemonym,
-  required String countryLanguage,
-  required String countryTimeZone,
-  required String countryPresident,
-  required String countryCuisinesLink,
-  required String countryCulturalDanceLink,
-  required String countryArtsCraftsLink,
+  required String consultationId,
+  required String notes,
+  required List<String> visaPathways,
+  required bool proceedWithApplication,
 }) async {
   var headers = await getHeaders();
 
-  // Create multipart request
-  var request = http.MultipartRequest(
-      'PATCH', Uri.parse('$baseUrl/country/countries/$countryID'))
+  final request = http.Request(
+    'PATCH',
+    Uri.parse('$baseUrl/consultation/$consultationId/complete'),
+  )
     ..headers.addAll(headers)
-    ..fields['created_by_id'] = userID
-    ..fields['title'] = countryTitle
-    ..fields['description'] = countryDescription
-    ..fields['capital'] = countryCapital
-    ..fields['currency'] = countryCurrency
-    ..fields['population'] = countryPopulation
-    ..fields['demonym'] = countryDemonym
-    ..fields['language'] = countryLanguage
-    ..fields['time_zone'] = countryTimeZone
-    ..fields['president'] = countryPresident
-    ..fields['link'] = countryCuisinesLink
-    ..fields['arts_and_crafts'] = countryArtsCraftsLink
-    ..fields['cultural_dance'] = countryCulturalDanceLink
-    ..fields['latitude'] = '' //not needed anymore but keep
-    ..fields['longitude'] = ""; //not needed anymore but keep
+    ..body = json.encode({
+      'notes': notes,
+      'visaPathways': visaPathways,
+      'proceedWithApplication': proceedWithApplication,
+    });
 
-  // Add image file if provided
-  if (coverImage != null) {
-    request.files.add(coverImage);
-  }
-  // Send the request
-  final response = await request.send();
+  try {
+    final response = await request.send();
+    debugPrint(response.statusCode.toString());
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text(
+            'Consultation updated successfully!',
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: Colors.green,
+        ));
+      }
+      Navigator.pop(context);
+    } else {
+      String errorMessage = 'Failed to complete consultation';
+      try {
+        final responseData = await http.Response.fromStream(response);
+        final decoded = json.decode(responseData.body);
+        errorMessage = decoded['message'] ?? errorMessage;
+      } catch (_) {
+        errorMessage = 'An unexpected error occurred';
+      }
 
-  // Handle the response
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text(
-          'Country updated successfully!',
-          textAlign: TextAlign.center,
-        ),
-        backgroundColor: Colors.green,
-      ));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            errorMessage,
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: Colors.red,
+        ));
+      }
+      throw Exception(errorMessage);
     }
-  } else {
-    final responseData = await http.Response.fromStream(response);
-    final String errorMessage =
-        json.decode(responseData.body)['message'] ?? 'Country update failed';
-
+  } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(
-          errorMessage,
+          'Failed to complete consultation: $e',
           textAlign: TextAlign.center,
         ),
         backgroundColor: Colors.red,
       ));
     }
-    throw Exception(errorMessage);
+    rethrow;
   }
 }
 
-Future<void> updateBusiness({
-  required BuildContext context,
-  required String businessID,
-  required String businessTitle,
-  required String businessDescription,
-  required String businessLocation,
-  required String email,
-  required String businessCategory,
-  required String facebook,
-  required String twitter,
-  required String instagram,
-  required String linkedIn,
-  required String whatsapp,
-  required String webAddress,
-  required List<http.MultipartFile>? mediaFiles,
-}) async {
-  var headers = await getHeaders();
-
-  // Create multipart request
-  var request =
-  http.MultipartRequest('PATCH', Uri.parse('$baseUrl/business/$businessID'))
-    ..headers.addAll(headers)
-    ..fields['businessTitle'] = businessTitle
-    ..fields['businessDescription'] = businessDescription
-    ..fields['businessLocation'] = businessLocation
-    ..fields['businessAddress'] = email //this is correct
-    ..fields['businessCategory'] = businessCategory
-    ..fields['facebook'] = facebook
-    ..fields['twitter'] = twitter
-    ..fields['instagram'] = instagram
-    ..fields['linkedIn'] = linkedIn
-    ..fields['whatsapp'] = whatsapp
-    ..fields['webAddress'] = webAddress;
-
-  // Add media files if available
-  if (mediaFiles != null && mediaFiles.isNotEmpty) {
-    for (var file in mediaFiles) {
-      request.files.add(file);
-    }  }
-  // Send the request
-  final response = await request.send();
-
-  // Handle the response
-  if (response.statusCode == 200 || response.statusCode == 201) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text(
-          'Business updated successfully!',
-          textAlign: TextAlign.center,
-        ),
-        backgroundColor: Colors.green,
-      ));
-    }
-  } else {
-    final responseData = await http.Response.fromStream(response);
-    final String errorMessage =
-        json.decode(responseData.body)['message'] ?? 'Business update failed';
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(
-          errorMessage,
-          textAlign: TextAlign.center,
-        ),
-        backgroundColor: Colors.red,
-      ));
-    }
-    throw Exception(errorMessage);
-  }
-}
 
 Future<void> roleUpdate({
   required BuildContext context,

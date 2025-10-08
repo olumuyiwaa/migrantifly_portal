@@ -43,7 +43,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (mounted) setState(() => _isLoading = true);
     try {
       allUsers = await loadCachedUsers();
-      allEvents = await loadCachedEvents();
+      allEvents = await loadCachedApplications();
       dashboardStats = await loadCachedDashboardStats();
       if (mounted && allUsers.isNotEmpty && allEvents.isNotEmpty && dashboardStats != null) {
         setState(() {
@@ -52,8 +52,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
       final freshUsers = await fetchUsers();
       await cacheUsers(freshUsers);
-      final freshEvents = await getFeaturedEvents();
-      await cacheEvents(freshEvents);
+      final freshEvents = await getFeaturedApplications();
+      await cacheApplications(freshEvents);
       final freshDashboardStats = await getDashboardStats();
       await cacheDashboardStats(freshDashboardStats);
 
