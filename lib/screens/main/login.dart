@@ -52,14 +52,14 @@ class _LoginPageState extends State<LoginPage> {
       body: Container(
         decoration: BoxDecoration(
           color: Colors.blue.withOpacity(.2),
-          // image: DecorationImage(
-          //   image: AssetImage('assets/images/background.jpg'),
-          //   fit: BoxFit.cover,
-          // ),
+          image: DecorationImage(
+            image: AssetImage("assets/images/bg.png"),
+            fit: BoxFit.cover,
+          ),
         ),
         child: Center(
           child: Card(
-            color: Colors.white,
+            color: Colors.white.withOpacity(.8),
             margin: const EdgeInsets.all(16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -75,71 +75,89 @@ class _LoginPageState extends State<LoginPage> {
                     Expanded(
                       flex: 5,
                       child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.blue.shade800,
-                              Colors.blue.shade500,
-                              Colors.teal.shade400,
-                            ],
-                          ),
-                        ),
-                        padding: const EdgeInsets.all(30),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Stack(
+                          fit: StackFit.expand,
                           children: [
-                            const SizedBox(height: 20),
-                            Text(
-                              'YOUR SERVICE SUIT',
-                              style: GoogleFonts.montserrat(
-                                color: Colors.white70,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.2,
+                            // Background image
+                            Image.asset(
+                              "assets/images/blog4.png",
+                              fit: BoxFit.cover,
+                            ),
+
+                            // Gradient overlay
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Colors.blue.shade800.withOpacity(0.9),
+                                    Colors.blue.shade500.withOpacity(0.7),
+                                    Colors.teal.shade400.withOpacity(0.5),
+                                  ],
+                                ),
                               ),
                             ),
-                            const Spacer(flex: 1),
-                            Text(
-                              'Migrantifly',
-                              style: GoogleFonts.playfairDisplay(
-                                color: Colors.white,
-                                fontSize: 58,
-                                fontWeight: FontWeight.w700,
-                                height: 1.1,
+
+                            // Foreground content
+                            Padding(
+                              padding: const EdgeInsets.all(30),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    'YOUR SERVICE SUIT',
+                                    style: GoogleFonts.montserrat(
+                                      color: Colors.black87,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                  const Spacer(flex: 1),
+                                  Text(
+                                    'Migrantifly',
+                                    style: GoogleFonts.playfairDisplay(
+                                      color: Colors.black,
+                                      fontSize: 58,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    "Comprehensive immigration solutions tailored to your unique journey. From visa applications to settlement planning, we're with you every step of the way.",
+                                    style: GoogleFonts.lato(
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                  const Spacer(flex: 3),
+                                  Text(
+                                    'From dreaming to thriving — we guide you through every step of your migration journey.',
+                                    style: GoogleFonts.playfairDisplay(
+                                      color: Colors.black,
+                                      fontSize: 20,
+                                      fontStyle: FontStyle.italic,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 20),
-                            Text(
-                              "Comprehensive immigration solutions tailored to your unique journey. From visa applications to settlement planning, we're with you every step of the way.",
-                              style: GoogleFonts.lato(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                            const Spacer(flex: 3),
-                            Text(
-                              'From dreaming to thriving — we guide you through every step of your migration journey.',
-                              style: GoogleFonts.playfairDisplay(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
                           ],
                         ),
-                      ),
+                      )
+                      ,
                     ),
 
                   // Right side with login form
                   Expanded(
                     flex: screenSize.width > 800 ? 4 : 1,
                     child: SingleChildScrollView(child:  Container(
-                      color: Colors.white,
                       padding: const EdgeInsets.all(40.0),
                       child: Form(
                         key: _formKey,
