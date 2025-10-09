@@ -636,8 +636,8 @@ class ApplicationDetailsPage extends StatelessWidget {
             if (application.timeline.length > 5)
               TextButton.icon(
                 onPressed: () => _showFullTimeline(context),
-                icon: const Icon(Icons.timeline),
-                label: Text('View full timeline (${application.timeline.length} entries)'),
+                icon: const Icon(Icons.timeline,color: Colors.blue,),
+                label: Text('View full timeline (${application.timeline.length} entries)',style: TextStyle(color: Colors.blue),),
               ),
           ],
         ),

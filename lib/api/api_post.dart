@@ -71,3 +71,69 @@ Future<void> submitToInz(String applicationId, String inzReference) async {
     throw Exception("Failed to submit to INZ: ${res.body}");
   }
 }
+
+Future<void> sendAssignAdviserRequest(
+    BuildContext context,
+    String applicationId,
+    String adviserId,
+    ) async {
+  var headers = await getHeaders();
+  final body = jsonEncode({"adviserId": adviserId});
+
+  try {
+    final response = await http.patch(
+      Uri.parse('$baseUrl/admin/applications/$applicationId/assign-adviser'),
+      headers: headers,
+      body: body,
+    );
+
+    debugPrint("📤 Sent payload: $body");
+    debugPrint("📥 Response: ${response.body}");
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final message = json.decode(response.body)["message"] ??
+          "Adviser assigned successfully!";
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            message,
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: Colors.green,
+        ));
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } else {
+      final decoded = json.decode(response.body);
+      String errorMessage = "Failed to assign adviser";
+
+      if (decoded is Map<String, dynamic>) {
+        if (decoded['message'] is String) {
+          errorMessage = decoded['message'];
+        } else if (decoded['message'] is List) {
+          errorMessage = (decoded['message'] as List).join('\n');
+        }
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(
+            errorMessage,
+            textAlign: TextAlign.center,
+          ),
+          backgroundColor: Colors.red,
+        ));
+      }
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+          e.toString(),
+          textAlign: TextAlign.center,
+        ),
+        backgroundColor: Colors.green,
+      ));
+    }
+  }
+}

@@ -129,14 +129,25 @@ class _ApplicationCardState extends State<ApplicationCard> {
                     const SizedBox(height: 14),
 
 // TIMELINE
-                    const Text(
-                      "Timeline",
-                      style: TextStyle(fontWeight: FontWeight.w600),
+                    Row(
+                      children: [
+                        Text(
+                          "Timeline",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        Spacer(),
+                        if (widget.application.timeline.length > 5)
+                          TextButton.icon(
+                            onPressed: () => _showFullTimeline(context),
+                            icon: const Icon(Icons.timeline,color: Colors.blue,),
+                            label: Text('View full timeline (${widget.application.timeline.length} entries)',style: TextStyle(color: Colors.blue),),
+                          )
+                      ],
                     ),
                     const SizedBox(height: 10),
                     Wrap(
                       spacing: 8,runSpacing: 8,
-                      children: widget.application.timeline
+                      children: widget.application.timeline.take(4)
                           .map((event) => _timelineItem(event: event))
                           .toList(),
                     ),
@@ -162,6 +173,142 @@ class _ApplicationCardState extends State<ApplicationCard> {
             ),
           ]),
         ));
+  }
+  void _showFullTimeline(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            leading: CloseButton(),
+            title: const Text('Full Timeline'),
+            elevation: 0,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Timeline for ${widget.application.displayVisaTypeTitle}',
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: widget.application.timeline.length,
+                    itemBuilder: (context, index) {
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(color: Colors.grey[200]!),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: _buildTimelineEntry(widget.application.timeline[index]),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  Widget _buildTimelineEntry(TimelineEntry entry) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          margin: const EdgeInsets.only(top: 4),
+          decoration: BoxDecoration(
+            color: Colors.grey,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.3),
+                blurRadius: 4,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getStageDisplayName(entry.stage),
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (entry.date != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  _formatDateTime(entry.date!),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+              if (entry.notes?.isNotEmpty == true) ...[
+                const SizedBox(height: 6),
+                Text(
+                  entry.notes!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getStageDisplayName(String stage) {
+    switch (stage.toLowerCase()) {
+      case 'consultation':
+        return 'Initial Consultation';
+      case 'deposit_paid':
+        return 'Deposit Paid';
+      case 'documents_completed':
+        return 'Documents Completed';
+      case 'additional_docs_required':
+        return 'Additional Documents Required';
+      case 'submitted_to_inz':
+        return 'Submitted to INZ';
+      case 'inz_processing':
+        return 'INZ Processing';
+      case 'rfi_received':
+        return 'Request for Information Received';
+      case 'ppi_received':
+        return 'Potentially Prejudicial Information Received';
+      case 'decision':
+        return 'Decision Made';
+      default:
+        return stage.replaceAll('_', ' ').toUpperCase();
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('MMM dd, yyyy').format(date);
+  }
+
+  String _formatDateTime(DateTime date) {
+    return DateFormat('MMM dd, yyyy at hh:mm a').format(date);
   }
 
   Color _getStatusColor(int progress) {
@@ -216,7 +363,8 @@ class _timelineItem extends StatelessWidget {
                   if (event.notes != null)
                     Text(
                       event.notes!,
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      maxLines: 4,
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12,overflow: TextOverflow.ellipsis),
                     ),
                   Text(
                     DateFormat("dd MMM yyyy").format(event.date!),
@@ -263,7 +411,8 @@ class _timelineItem extends StatelessWidget {
                 if (event.notes != null)
                   Text(
                     event.notes!,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    maxLines: 4,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12,overflow: TextOverflow.ellipsis),
                   ),
                 Text(
                   DateFormat("dd MMM yyyy").format(event.date!),
