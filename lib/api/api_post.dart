@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../models/class_users.dart';
 import 'api_helper.dart';
 
 Future<void> postNote(String applicationId, String type, String description, DateTime? dueDate) async {
@@ -135,5 +136,50 @@ Future<void> sendAssignAdviserRequest(
         backgroundColor: Colors.green,
       ));
     }
+  }
+}
+
+Future<void> createAdviserAccount({
+  required BuildContext context,
+  required String email,
+  required String password,
+  required String firstName,
+  required String lastName,
+  required String phone,
+  required String nationality,
+}) async {
+  try {
+    final headers = await getHeaders();
+    final response = await http.post(
+      Uri.parse("$baseUrl/admin/create-adviser"),
+      headers: headers,
+      body: json.encode({
+        "email": email,
+        "password": password,
+        "profile": {
+          "firstName": firstName,
+          "lastName": lastName,
+          "phone": phone,
+          "nationality": nationality,
+        },
+      }),
+    );
+
+    final data = json.decode(response.body);
+
+    if (response.statusCode == 201) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Adviser account created successfully')),
+      );
+      Navigator.pop(context); // Close modal
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'] ?? 'Failed to create adviser')),
+      );
+    }
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error: $e')),
+    );
   }
 }

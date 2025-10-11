@@ -1,4 +1,6 @@
 // dart
+import 'dart:io';
+
 import 'package:Migrantifly/components/uploaded_documents.dart';
 import 'package:Migrantifly/models/class_documents.dart';
 import 'package:file_picker/file_picker.dart';
@@ -8,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../api/api_delete.dart';
 import '../api/api_get.dart';
 import '../api/api_post.dart';
+import '../api/api_update.dart';
 import '../constants.dart';
 import '../models/class_applications.dart';
 import '../models/class_users.dart';
@@ -86,6 +89,7 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                 subtitle: 'Update the application stage',
                 onTap: () {
                   Navigator.pop(context);
+                  _updateStage(context,applicationId);
                 },
               ),
               _buildDialogAction(
@@ -94,6 +98,7 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                 subtitle: 'Record decision for this application',
                 onTap: () {
                   Navigator.pop(context);
+                  _submitDecision(context,applicationId);
                 },
               ),
               _buildDialogAction(
@@ -212,24 +217,86 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
     ];
 
     String? selectedType;
-    String? fileName;
+    PlatformFile? selectedFile;
+    double uploadProgress = 0.0;
+    bool isUploading = false;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            Future<void> pickFile() async {
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png'],
+              );
+
+              if (result != null && result.files.isNotEmpty) {
+                setState(() {
+                  selectedFile = result.files.single;
+                });
+              }
+            }
+
+            Future<void> simulateUpload() async {
+              setState(() => isUploading = true);
+              for (var i = 1; i <= 10; i++) {
+                await Future.delayed(const Duration(milliseconds: 200));
+                setState(() => uploadProgress = i / 10);
+              }
+              setState(() => isUploading = false);
+
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Document uploaded successfully!")),
+              );
+            }
+
             return AlertDialog(
               backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              title: const Text('Upload Document'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              contentPadding: const EdgeInsets.all(24),
+              title: const Text('Upload Document', style: TextStyle(fontWeight: FontWeight.w600)),
               content: SizedBox(
                 width: 400,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.cloud_upload, size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
+                    // Upload area
+                    GestureDetector(
+                      onTap: pickFile,
+                      child: Container(
+                        height: 160,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cloud_upload_outlined,
+                                size: 48, color: Colors.grey[500]),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Drag and Drop file here or Choose file",
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Supported formats: PDF, DOC, DOCX, JPG, PNG",
+                              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Dropdown for document type
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: "Document Type",
@@ -237,76 +304,81 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                       ),
                       value: selectedType,
                       items: documentTypes
-                          .map((type) => DropdownMenuItem(
-                          value: type, child: Text(type.capitalizeWords())))
+                          .map((type) =>
+                          DropdownMenuItem(value: type, child: Text(type.replaceAll("_", " ").capitalizeWords())))
                           .toList(),
                       onChanged: (value) => setState(() => selectedType = value),
                     ),
-                    const SizedBox(height: 16),
-                    if (fileName != null)
-                      Text("Selected file: $fileName",
-                          style: const TextStyle(fontSize: 12)),
-                    if (fileName == null)
-                      const Text("No file chosen",
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+
+                    const SizedBox(height: 20),
+
+                    // File preview
+                    if (selectedFile != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[100],
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.insert_drive_file, color: Colors.green),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(selectedFile!.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  Text(
+                                    "${(selectedFile!.size / (1024 * 1024)).toStringAsFixed(2)} MB",
+                                    style: TextStyle(
+                                        color: Colors.grey[600], fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.grey),
+                              onPressed: () => setState(() {
+                                selectedFile = null;
+                                uploadProgress = 0;
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    if (isUploading) ...[
+                      const SizedBox(height: 12),
+                      LinearProgressIndicator(
+                        value: uploadProgress,
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.blueAccent,
+                        backgroundColor: Colors.grey[300],
+                      ),
+                    ],
                   ],
                 ),
               ),
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               actions: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  onPressed: () async {
-                    final result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png'],
-                    );
-                    if (result != null) {
-                      setState(() {
-                        fileName = result.files.single.name;
-                      });
-                    }
-                  },
-                  child: const Text('Choose File'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: selectedType != null && fileName != null
-                      ? () {
-                    // TODO: upload logic (send file + type to backend)
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Document uploaded successfully!")),
-                    );
-                  }
+                  onPressed: (selectedType != null && selectedFile != null && !isUploading)
+                      ? simulateUpload
                       : null,
-                  child: Text(
-                    'Upload',
-                    style: TextStyle(
-                        color: selectedType != null && fileName != null
-                            ? Colors.white
-                            : Colors.grey),
-                  ),
+                  child: const Text('Upload'),
                 ),
               ],
             );
@@ -361,63 +433,220 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
 
     showDialog(
       context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            contentPadding: const EdgeInsets.all(24),
+            title: Row(
+              children: const [
+                Icon(Icons.note_add_outlined, color: Colors.blueAccent, size: 28),
+                SizedBox(width: 8),
+                Text(
+                  'Add Note',
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              width: 420,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Dropdown for type
+                  DropdownButtonFormField<String>(
+                    value: selectedType,
+                    decoration: InputDecoration(
+                      labelText: "Select Note Type",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 14,
+                      ),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: "ppi", child: Text("PPI")),
+                      DropdownMenuItem(value: "rfi", child: Text("RFI")),
+                      DropdownMenuItem(value: "inz", child: Text("Submit to INZ")),
+                    ],
+                    onChanged: (value) => setState(() => selectedType = value!),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Note text field
+                  TextField(
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      hintText: 'Enter your note here...',
+                      labelText: 'Note',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignLabelWithHint: true,
+                    ),
+                    onChanged: (value) => note = value.trim(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Date picker (conditional)
+                  if (selectedType == "ppi" || selectedType == "rfi")
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: dueDate ?? DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() => dueDate = picked);
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'Due Date',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          suffixIcon: const Icon(Icons.calendar_today_outlined),
+                        ),
+                        child: Text(
+                          dueDate != null
+                              ? "${dueDate!.toLocal().toString().split(' ')[0]}"
+                              : "Select due date",
+                          style: TextStyle(
+                            color: dueDate != null
+                                ? Colors.black
+                                : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            actions: [
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.black87,
+                  side: BorderSide(color: Colors.grey[300]!),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () async {
+                  // ✅ Validation
+                  if (note.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a note.')),
+                    );
+                    return;
+                  }
+                  if ((selectedType == "ppi" || selectedType == "rfi") && dueDate == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select a due date.')),
+                    );
+                    return;
+                  }
+
+                  Navigator.of(context).pop();
+
+                  // ✅ Execute API logic
+                  if (selectedType == "ppi" || selectedType == "rfi") {
+                    await postNote(applicationId, selectedType, note, dueDate);
+                  } else if (selectedType == "inz") {
+                    await submitToInz(applicationId, note);
+                  }
+
+                  // ✅ Confirmation feedback
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        selectedType == "inz"
+                            ? 'Submitted to INZ successfully'
+                            : 'Note added successfully',
+                      ),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                child: const Text('Submit'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+  void _updateStage(BuildContext context, String applicationId) {
+    final List<String> stages = [
+      'consultation',
+      'deposit_paid',
+      'documents_completed',
+      'additional_docs_required',
+      'submitted_to_inz',
+      'inz_processing',
+      'rfi_received',
+      'ppi_received',
+      'decision',
+    ];
+
+    String? selectedStage;
+    String notes = '';
+
+    showDialog(
+      context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          title: const Text('Add Note', style: TextStyle(fontSize: 32)),
+          title: const Text('Update Application Stage', style: TextStyle(fontSize: 24)),
           content: SizedBox(
             width: 400,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: selectedType,
+                  value: selectedStage,
                   decoration: const InputDecoration(
-                    labelText: "Select Type",
+                    labelText: "Select Stage",
                     border: OutlineInputBorder(),
                   ),
-                  items: const [
-                    DropdownMenuItem(value: "ppi", child: Text("PPI")),
-                    DropdownMenuItem(value: "rfi", child: Text("RFI")),
-                    DropdownMenuItem(value: "inz", child: Text("Submit to INZ")),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      selectedType = value!;
-                    });
-                  },
+                  items: stages
+                      .map((stage) => DropdownMenuItem(
+                      value: stage,
+                      child: Text(stage.replaceAll('_', ' ').toUpperCase())))
+                      .toList(),
+                  onChanged: (value) => setState(() => selectedStage = value),
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  maxLines: 4,
+                  maxLines: 3,
                   decoration: const InputDecoration(
-                    hintText: 'Enter your note here...',
+                    labelText: 'Notes',
+                    hintText: 'Add any relevant notes...',
                     border: OutlineInputBorder(),
                   ),
-                  onChanged: (value) => note = value,
+                  onChanged: (value) => notes = value,
                 ),
-                const SizedBox(height: 12),
-                if (selectedType == "ppi" || selectedType == "rfi")
-                  ElevatedButton(
-                    onPressed: () async {
-                      final picked = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) {
-                        setState(() {
-                          dueDate = picked;
-                        });
-                      }
-                    },
-                    child: Text(
-                      dueDate == null
-                          ? "Pick Due Date"
-                          : "Due: ${dueDate!.toLocal().toString().split(' ')[0]}",
-                    ),
-                  ),
               ],
             ),
           ),
@@ -427,26 +656,201 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
               child: const Text('Cancel'),
             ),
             ElevatedButton(
-              onPressed: () async {
+              onPressed: selectedStage != null
+                  ? () async {
                 Navigator.of(context).pop();
 
-                if (selectedType == "ppi" || selectedType == "rfi") {
-                  await postNote(applicationId, selectedType, note, dueDate);
-                } else if (selectedType == "inz") {
-                  await submitToInz(applicationId, note);
-                }
+                await postStageUpdate(applicationId, selectedStage!, notes);
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      selectedType == "inz"
-                          ? 'Submitted to INZ successfully'
-                          : 'Note added successfully',
-                    ),
+                  const SnackBar(
+                    content: Text('Stage updated successfully'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
-              },
+              }
+                  : null,
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _submitDecision(BuildContext context, String applicationId) {
+    final List<String> outcomes = ['approved', 'declined', 'pending'];
+
+    String? selectedOutcome;
+    String notes = '';
+    File? decisionLetter;
+    double uploadProgress = 0.0;
+    bool isUploading = false;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Submit Decision',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedOutcome,
+                  decoration: const InputDecoration(
+                    labelText: "Decision Outcome",
+                    border: OutlineInputBorder(),
+                  ),
+                  items: outcomes
+                      .map((outcome) => DropdownMenuItem(
+                      value: outcome, child: Text(outcome.capitalizeWords())))
+                      .toList(),
+                  onChanged: (value) => setState(() => selectedOutcome = value),
+                ),
+                const SizedBox(height: 16),
+
+                // File upload section
+                GestureDetector(
+                  onTap: () async {
+                    final result = await FilePicker.platform.pickFiles(
+                      type: FileType.custom,
+                      allowedExtensions: ['pdf', 'doc', 'docx'],
+                    );
+                    if (result != null) {
+                      setState(() {
+                        decisionLetter = File(result.files.single.path!);
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: decisionLetter == null
+                        ? Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.upload_file, size: 48, color: Colors.blue),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Drag and drop file here or click to choose file',
+                          style: TextStyle(fontSize: 14),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Supported: PDF, DOC, DOCX — Max size 25MB',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    )
+                        : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.insert_drive_file,
+                                color: Colors.green, size: 24),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                decisionLetter!.path.split('/').last,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () => setState(() => decisionLetter = null),
+                            ),
+                          ],
+                        ),
+                        if (isUploading)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: LinearProgressIndicator(
+                              value: uploadProgress,
+                              minHeight: 6,
+                              backgroundColor: Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) => notes = value,
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: selectedOutcome != null && decisionLetter != null && !isUploading
+                  ? () async {
+                setState(() {
+                  isUploading = true;
+                  uploadProgress = 0.3; // Fake progress start
+                });
+
+                await Future.delayed(const Duration(seconds: 1)); // simulate delay
+
+                try {
+                  await postDecision(
+                    applicationId,
+                    selectedOutcome!,
+                    notes,
+                    decisionLetter!,
+                        (progress) => setState(() => uploadProgress = progress),
+                  );
+
+                  setState(() => uploadProgress = 1.0);
+
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Decision submitted successfully'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: $e')),
+                  );
+                } finally {
+                  setState(() => isUploading = false);
+                }
+              }
+                  : null,
               child: const Text('Submit'),
             ),
           ],

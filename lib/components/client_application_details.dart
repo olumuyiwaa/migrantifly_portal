@@ -1048,26 +1048,86 @@ class ApplicationDetailsPage extends StatelessWidget {
     ];
 
     String? selectedType;
-    String? fileName;
+    PlatformFile? selectedFile;
+    double uploadProgress = 0.0;
+    bool isUploading = false;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            Future<void> pickFile() async {
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png'],
+              );
+
+              if (result != null && result.files.isNotEmpty) {
+                setState(() {
+                  selectedFile = result.files.single;
+                });
+              }
+            }
+
+            Future<void> simulateUpload() async {
+              setState(() => isUploading = true);
+              for (var i = 1; i <= 10; i++) {
+                await Future.delayed(const Duration(milliseconds: 200));
+                setState(() => uploadProgress = i / 10);
+              }
+              setState(() => isUploading = false);
+
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Document uploaded successfully!")),
+              );
+            }
+
             return AlertDialog(
               backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              title: const Text('Upload Document'),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              contentPadding: const EdgeInsets.all(24),
+              title: const Text('Upload Document', style: TextStyle(fontWeight: FontWeight.w600)),
               content: SizedBox(
                 width: 400,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.cloud_upload, size: 64, color: Colors.grey),
-                    const SizedBox(height: 16),
+                    // Upload area
+                    GestureDetector(
+                      onTap: pickFile,
+                      child: Container(
+                        height: 160,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.cloud_upload_outlined,
+                                size: 48, color: Colors.grey[500]),
+                            const SizedBox(height: 8),
+                            const Text(
+                              "Drag and Drop file here or Choose file",
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Supported formats: PDF, DOC, DOCX, JPG, PNG",
+                              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
-                    // Dropdown for selecting type
+                    const SizedBox(height: 20),
+
+                    // Dropdown for document type
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
                         labelText: "Document Type",
@@ -1076,76 +1136,80 @@ class ApplicationDetailsPage extends StatelessWidget {
                       value: selectedType,
                       items: documentTypes
                           .map((type) =>
-                          DropdownMenuItem(value: type, child: Text(type.capitalizeWords())))
+                          DropdownMenuItem(value: type, child: Text(type.replaceAll("_", " "))))
                           .toList(),
                       onChanged: (value) => setState(() => selectedType = value),
                     ),
-                    const SizedBox(height: 16),
+
+                    const SizedBox(height: 20),
 
                     // File preview
-                    if (fileName != null)
-                      Text("Selected file: $fileName",
-                          style: const TextStyle(fontSize: 12)),
-                    if (fileName == null)
-                      const Text("No file chosen",
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    if (selectedFile != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          color: Colors.grey[100],
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.insert_drive_file, color: Colors.green),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(selectedFile!.name,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600)),
+                                  Text(
+                                    "${(selectedFile!.size / (1024 * 1024)).toStringAsFixed(2)} MB",
+                                    style: TextStyle(
+                                        color: Colors.grey[600], fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, color: Colors.grey),
+                              onPressed: () => setState(() {
+                                selectedFile = null;
+                                uploadProgress = 0;
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    if (isUploading) ...[
+                      const SizedBox(height: 12),
+                      LinearProgressIndicator(
+                        value: uploadProgress,
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(6),
+                        color: Colors.blueAccent,
+                        backgroundColor: Colors.grey[300],
+                      ),
+                    ],
                   ],
                 ),
               ),
+              actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               actions: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                TextButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Cancel'),
                 ),
-                if(Responsive.isMobile(context))
-                  SizedBox(height: 8,),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
-                  onPressed: () async {
-                    final result = await FilePicker.platform.pickFiles(
-                      type: FileType.custom,
-                      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png'],
-                    );
-                    if (result != null) {
-                      setState(() {
-                        fileName = result.files.single.name;
-                      });
-                    }
-                  },
-                  child: const Text('Choose File'),
-                ),
-                if(Responsive.isMobile(context))
-                  SizedBox(height: 8,),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: selectedType != null && fileName != null
-                      ? () {
-                    // TODO: upload logic (send file + type to backend)
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Document uploaded successfully!")),
-                    );
-                  }
+                  onPressed: (selectedType != null && selectedFile != null && !isUploading)
+                      ? simulateUpload
                       : null,
-                  child:  Text('Upload',style: TextStyle(color: selectedType != null && fileName != null
-                      ? Colors.white : Colors.grey),),
+                  child: const Text('Upload'),
                 ),
               ],
             );

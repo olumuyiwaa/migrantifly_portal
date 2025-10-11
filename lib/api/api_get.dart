@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/class_consultation.dart';
 import '../models/class_applications.dart';
 import '../models/class_deadlines.dart';
+import '../models/class_system_health.dart';
 import '../models/class_transactions.dart';
 import '../models/class_users.dart';
 import '../models/class_visa_document_requirement.dart';
@@ -632,4 +633,44 @@ class DeadlinesCache {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_cacheKey);
   }
+}
+
+Future<SystemHealth?> fetchSystemHealth() async {
+  try {
+    final headers = await getHeaders();
+    final response = await http.get(
+      Uri.parse('$baseUrl/admin/system-health'),
+      headers: headers,
+    );
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      return SystemHealth.fromJson(jsonData);
+    } else {
+      print("Failed: ${response.body}");
+      return null;
+    }
+  } catch (e) {
+    print("Error fetching system health: $e");
+    return null;
+  }
+}
+
+Future<void> cacheSystemHealth(SystemHealth health) async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = json.encode(health.toJson());
+  await prefs.setString('cached_system_health', jsonString);
+}
+
+Future<SystemHealth?> loadCachedSystemHealth() async {
+  final prefs = await SharedPreferences.getInstance();
+  final jsonString = prefs.getString('cached_system_health');
+  if (jsonString != null) {
+    try {
+      final jsonData = json.decode(jsonString);
+      return SystemHealth.fromJson(jsonData);
+    } catch (e) {
+      print("Error decoding cached system health: $e");
+    }
+  }
+  return null;
 }

@@ -1,16 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../constants.dart';
 import '../models/class_documents.dart';
 
-class DocumentDetails extends StatelessWidget {
+class DocumentDetails extends StatefulWidget {
   final Document doc;
   final VoidCallback onClose;
   final bool isClient;
   const DocumentDetails({super.key, required this.doc, required this.onClose, required this.isClient});
+
+  @override
+  State<DocumentDetails> createState() => _DocumentDetailsState();
+}
+
+class _DocumentDetailsState extends State<DocumentDetails> {
+
+  @override
+  void initState() {
+    super.initState();
+    getUserInfo();
+  }
+  String userRole = '';
+  Future<void> getUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userRole = prefs.getString('role') ?? '';
+    });
+  }
+
   Future<void> _openDocumentUrl(BuildContext context, Document doc) async {
-    // TODO: replace with your actual URL field, e.g. doc.url or doc.fileUrl
     final String? url = doc.fileUrl;
 
     if (url == null || url.isEmpty) {
@@ -70,8 +90,8 @@ class DocumentDetails extends StatelessWidget {
                 Row(
                   children: [
                     Icon(
-                      _getDocumentIcon(doc),
-                      color: _getDocumentColor(doc),
+                      _getDocumentIcon(widget.doc),
+                      color: _getDocumentColor(widget.doc),
                       size: 32,
                     ),
                     const SizedBox(width: 12),
@@ -89,7 +109,7 @@ class DocumentDetails extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            doc.name,
+                            widget.doc.name,
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -100,7 +120,7 @@ class DocumentDetails extends StatelessWidget {
                         ],
                       ),
                     ),
-                    CloseButton(onPressed: onClose,style: ElevatedButton.styleFrom(
+                    CloseButton(onPressed: widget.onClose,style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       padding: const EdgeInsets.all(12),
                       shape: RoundedRectangleBorder(
@@ -124,16 +144,16 @@ class DocumentDetails extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: _getStatusColor(doc.status),
+                      color: _getStatusColor(widget.doc.status),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          doc.status.toLowerCase() == 'approved'
+                          widget.doc.status.toLowerCase() == 'approved'
                               ? Icons.check_circle
-                              : doc.status.toLowerCase() == 'rejected'
+                              : widget.doc.status.toLowerCase() == 'rejected'
                               ? Icons.cancel
                               : Icons.schedule,
                           color: Colors.white,
@@ -141,7 +161,7 @@ class DocumentDetails extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          doc.status.toUpperCase(),
+                          widget.doc.status.toUpperCase(),
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -156,27 +176,27 @@ class DocumentDetails extends StatelessWidget {
 
                   // Document details
                   _buildDetailSection("Document Information", [
-                    _buildDetailRow(Icons.description_outlined, "Type", doc.type.toUpperCase()),
-                    _buildDetailRow(Icons.file_present, "Original Name", doc.originalName),
-                    _buildDetailRow(Icons.storage, "File Size", "${(doc.fileSize / (1024 * 1024)).toStringAsFixed(2)} MB"),
-                    _buildDetailRow(Icons.code, "MIME Type", doc.mimeType),
+                    _buildDetailRow(Icons.description_outlined, "Type", widget.doc.type.toUpperCase()),
+                    _buildDetailRow(Icons.file_present, "Original Name", widget.doc.originalName),
+                    _buildDetailRow(Icons.storage, "File Size", "${(widget.doc.fileSize / (1024 * 1024)).toStringAsFixed(2)} MB"),
+                    _buildDetailRow(Icons.code, "MIME Type", widget.doc.mimeType),
                   ]),
-                  if (!isClient)
+                  if (!widget.isClient)
                   const SizedBox(height: 24),
-                  if (!isClient)
+                  if (!widget.isClient)
                   // Client information
                   _buildDetailSection("Client Information", [
-                    _buildDetailRow(Icons.person_outline, "Uploaded By",doc.clientId?.fullName ?? "N/A"),
+                    _buildDetailRow(Icons.person_outline, "Uploaded By",widget.doc.clientId?.fullName ?? "N/A"),
                   ]),
 
                   // Review information
-                  if (doc.reviewNotes.isNotEmpty || doc.reviewedBy != null) ...[
+                  if (widget.doc.reviewNotes.isNotEmpty || widget.doc.reviewedBy != null) ...[
                     const SizedBox(height: 24),
                     _buildDetailSection("Review Information", [
-                      if (doc.reviewedBy != null)
-                        _buildDetailRow(Icons.person_outline, "Reviewed By", doc.reviewedBy!.fullName),
-                      if (doc.reviewNotes.isNotEmpty)
-                        _buildDetailRow(Icons.notes_outlined, "Review Notes", doc.reviewNotes),
+                      if (widget.doc.reviewedBy != null)
+                        _buildDetailRow(Icons.person_outline, "Reviewed By", widget.doc.reviewedBy!.fullName),
+                      if (widget.doc.reviewNotes.isNotEmpty)
+                        _buildDetailRow(Icons.notes_outlined, "Review Notes", widget.doc.reviewNotes),
                     ]),
                   ],
 
@@ -186,14 +206,28 @@ class DocumentDetails extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      if (userRole.toLowerCase() != "client")
+                        ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => reviewDoc(context, widget.doc.id),
+                        icon: const Icon(Icons.rate_review_rounded,color: Colors.white,),
+                        label: const Text("Review Document",style: TextStyle(color: Colors.white),),
+                      ),
+                      const SizedBox(height: 12),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () => _openDocumentUrl(context, doc),
+                        onPressed: () => _openDocumentUrl(context, widget.doc),
                         icon: const Icon(Icons.open_in_new),
                         label: const Text("Open Document"),
                       ),
@@ -202,10 +236,10 @@ class DocumentDetails extends StatelessWidget {
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () => _downloadDocument(doc,context),
+                        onPressed: () => _downloadDocument(widget.doc,context),
                         icon: const Icon(Icons.download),
                         label: const Text("Download"),
                       ),
@@ -232,6 +266,7 @@ Future<void> _downloadDocument(Document doc, BuildContext context) async {
     ),
   );
 }
+
 Widget _buildDetailRow(IconData icon, String label, String value) {
   return Padding(
     padding: const EdgeInsets.symmetric(vertical: 8),
@@ -267,6 +302,80 @@ Widget _buildDetailRow(IconData icon, String label, String value) {
     ),
   );
 }
+void reviewDoc(BuildContext context, String documentId) {
+  String note = '';
+  String selectedStatus = "pending";
+  List<String> documentStatus = ['pending', 'approved', 'rejected', 'under_review'];
+
+  showDialog(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        title: const Text('Review Document', style: TextStyle(fontSize: 32)),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+            DropdownButtonFormField<String>(
+            value: selectedStatus,
+            decoration: const InputDecoration(
+              labelText: "Document Status",
+              border: OutlineInputBorder(),
+            ),
+            items: documentStatus
+                .map(
+                  (status) => DropdownMenuItem(
+                value: status,
+                child: Text(
+                  status[0].toUpperCase() + status.substring(1),
+                ),
+              ),
+            )
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                selectedStatus = value!;
+              });
+            },
+          ),
+              const SizedBox(height: 12),
+              TextField(
+                maxLines: 4,
+                decoration: const InputDecoration(
+                  hintText: 'Enter your note here...',
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) => note = value,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            padding: const EdgeInsets.all(12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+            onPressed: () async {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Submit',style: TextStyle(color: Colors.white),),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 Widget _buildDetailSection(String title, List<Widget> children) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
