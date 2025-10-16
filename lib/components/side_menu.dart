@@ -158,7 +158,7 @@ class _SideMenuState extends State<SideMenu> {
                 ),
 
                 SizedBox(
-                  height: 110,
+                  height: 240,
                 )
               ],
             ),
@@ -171,15 +171,15 @@ class _SideMenuState extends State<SideMenu> {
                   children: [
                   ListTile(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    tileColor: Colors.red.withOpacity(0.2),
+                    tileColor: Colors.red,
                     onTap: (){signOut(context: context);},
                     leading:
-                    Icon(Icons.logout_rounded,color: Colors.red,size: 24,)
+                    Icon(Icons.logout_rounded,color: Colors.white,size: 24,)
                    ,
                     title: Text(
                       "Log Out",
                       style: TextStyle(
-                        color:Colors.red,
+                        color:Colors.white,
                       ),
                     ),
                   ),

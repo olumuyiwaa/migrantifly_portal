@@ -153,7 +153,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
                   Icon(Icons.info_outline, color: primaryColor, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    "Document selected - view details in the side panel",
+                    "View document details in the side panel",
                     style: TextStyle(
                       color: primaryColor,
                       fontWeight: FontWeight.w500,
@@ -173,9 +173,9 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
             child: GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: _getCrossAxisCount(context),
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                childAspectRatio: 1,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: .9,
               ),
               itemCount: documents.length,
               itemBuilder: (context, index) {
@@ -193,7 +193,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
     // Adjust grid based on whether side panel is showing
     final availableWidth = _selectedIndex == -1 ? width : width - 400;
 
-    if (availableWidth > 1200) return 4;
+    if (availableWidth > 1200) return 5;
     if (availableWidth > 900) return 3;
     if (availableWidth > 600) return 2;
     return 1;

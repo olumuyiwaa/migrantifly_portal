@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../models/class_users.dart';
@@ -181,5 +182,54 @@ Future<void> createAdviserAccount({
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Error: $e')),
     );
+  }
+}
+
+Future<void> uploadDocument({
+  required String applicationId,
+  required String documentType,
+  required PlatformFile? selectedFile,
+  String? expiryDate,
+}) async {
+  if (selectedFile == null) {
+    throw Exception("No file selected for upload");
+  }
+
+  final fileName = selectedFile.name;
+  print("📄 Uploading: $fileName");
+
+  try {
+    final headers = await getHeaders();
+    final uri = Uri.parse("$baseUrl/documents/upload");
+
+    final request = http.MultipartRequest('POST', uri)
+      ..fields['applicationId'] = applicationId
+      ..fields['documentType'] = documentType;
+
+    if (expiryDate != null && expiryDate.isNotEmpty) {
+      request.fields['expiryDate'] = expiryDate;
+    }
+
+    // Attach file
+    final fileBytes = selectedFile.bytes!;
+    request.files.add(http.MultipartFile.fromBytes(
+      'document',
+      fileBytes,
+      filename: fileName,
+    ));
+
+    request.headers.addAll(headers);
+
+    final response = await request.send();
+    final responseBody = await response.stream.bytesToString();
+
+    if (response.statusCode == 200) {
+      print("✅ Upload successful: $responseBody");
+    } else {
+      throw Exception("Upload failed (${response.statusCode}): $responseBody");
+    }
+  } catch (e) {
+    print("⚠️ Error uploading document: $e");
+    rethrow;
   }
 }

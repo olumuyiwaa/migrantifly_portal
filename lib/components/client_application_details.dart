@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../api/api_post.dart';
 import '../models/class_applications.dart';
 import '../models/class_users.dart';
 import '../responsive.dart';
@@ -1073,16 +1074,32 @@ class ApplicationDetailsPage extends StatelessWidget {
 
             Future<void> simulateUpload() async {
               setState(() => isUploading = true);
-              for (var i = 1; i <= 10; i++) {
-                await Future.delayed(const Duration(milliseconds: 200));
-                setState(() => uploadProgress = i / 10);
-              }
-              setState(() => isUploading = false);
 
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Document uploaded successfully!")),
-              );
+              try {
+                // Simulate progress
+                for (var i = 1; i <= 10; i++) {
+                  await Future.delayed(const Duration(milliseconds: 200));
+                  setState(() => uploadProgress = i / 10);
+                }
+
+                final response = await uploadDocument(
+                  applicationId: application.id,
+                  documentType: selectedType!,
+                  selectedFile: selectedFile,
+                );
+
+                setState(() => isUploading = false);
+
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Document uploaded successfully!")),
+                );
+              } catch (e) {
+                setState(() => isUploading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Upload failed: $e")),
+                );
+              }
             }
 
             return AlertDialog(

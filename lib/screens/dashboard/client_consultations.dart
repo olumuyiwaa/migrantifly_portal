@@ -113,7 +113,7 @@ class _ClientConsultationsState extends State<ClientConsultations> {
             padding: EdgeInsets.all(isMobile ? 16 : 24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.only(topLeft: Radius.circular(12),topRight: Radius.circular(12)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -153,7 +153,7 @@ class _ClientConsultationsState extends State<ClientConsultations> {
               ],
             ),
           ),
-
+          SizedBox(height: 4,),
           // Filter Bar
           _buildFilterBar(),
 
@@ -182,6 +182,7 @@ class _ClientConsultationsState extends State<ClientConsultations> {
       padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: const BoxDecoration(
         color: Colors.white,
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(12),bottomRight: Radius.circular(12))
       ),
       child: Column(
         children: [

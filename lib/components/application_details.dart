@@ -242,16 +242,32 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
 
             Future<void> simulateUpload() async {
               setState(() => isUploading = true);
-              for (var i = 1; i <= 10; i++) {
-                await Future.delayed(const Duration(milliseconds: 200));
-                setState(() => uploadProgress = i / 10);
-              }
-              setState(() => isUploading = false);
 
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Document uploaded successfully!")),
-              );
+              try {
+                // Simulate progress
+                for (var i = 1; i <= 10; i++) {
+                  await Future.delayed(const Duration(milliseconds: 200));
+                  setState(() => uploadProgress = i / 10);
+                }
+
+                final response = await uploadDocument(
+                  applicationId: widget.application.id,
+                  documentType: selectedType!,
+                  selectedFile: selectedFile,
+                );
+
+                setState(() => isUploading = false);
+
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Document uploaded successfully!")),
+                );
+              } catch (e) {
+                setState(() => isUploading = false);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Upload failed: $e")),
+                );
+              }
             }
 
             return AlertDialog(
