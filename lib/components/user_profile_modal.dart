@@ -193,10 +193,10 @@ class _UserProfileModalState extends State<UserProfileModal>
                 child: CircularProgressIndicator(),
               ),
             )
-                : Column(
+                : ListView(
               children: [
                 _buildHeader(colorScheme),
-                Expanded(child: _buildForm()),
+                _buildForm(),
                 _buildActions(colorScheme),
               ],
             ),

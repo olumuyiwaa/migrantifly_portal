@@ -32,6 +32,12 @@ class MigrantiflyApp extends StatelessWidget {
               .apply(bodyColor: Colors.black54),
           canvasColor: secondaryColor,
         ),
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaleFactor: .9),
+            child: child!,
+          );
+        },
         home: const SplashScreen(),
       ),
     );

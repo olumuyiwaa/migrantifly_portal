@@ -1,3 +1,4 @@
+import 'package:Migrantifly/components/forms/book_consultation.dart';
 import 'package:Migrantifly/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -138,6 +139,23 @@ class _ClientConsultationsState extends State<ClientConsultations> {
                         color: Colors.grey[800],
                       ),
                     ),
+                    Spacer(),
+                    ElevatedButton(onPressed: (){
+                      // Show the modal
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => BookConsultationModal(
+                          onClose: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      );
+                    },style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(vertical: 8,horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))
+                    ), child: Text("Book New",style: TextStyle(color: Colors.white),))
                   ],
                 ),
                 if (!_isLoading) ...[
