@@ -155,164 +155,174 @@ class _LoginPageState extends State<LoginPage> {
                     ),
 
                   // Right side with login form
-                  Expanded(
-                    flex: screenSize.width > 800 ? 4 : 1,
-                    child: SingleChildScrollView(child:  Container(
+            Expanded(
+              flex: screenSize.width > 800 ? 4 : 1,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return Form(
+                    key: _formKey,
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.all(40.0),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (screenSize.width <= 800)
-                            Center(
-                              child: Text(
-                                'Migrantifly',
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
-                                ),
-                              ),
-                            ),
-                          if (screenSize.width <= 800)
-                            const SizedBox(height: 30),
-                          Center(
-                            child: Text(
-                              'Welcome Back',
-                              style: GoogleFonts.playfairDisplay(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Center(
-                            child: Text(
-                              'Enter your email and password to access your account',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.lato(
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-                          Inputfield(
-                            inputHintText: 'Enter your email address',
-                            inputTitle: 'Email Address',
-                            textObscure: false,
-                            textController: _emailController,
-                            isreadOnly: isLoading,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return "Email is required";
-                              } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                                  .hasMatch(value)) {
-                                return "Enter a valid email";
-                              }
-                              return null;
-                            },
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 20),
-                          Inputfield(
-                            isreadOnly: isLoading,
-                            inputHintText: 'Enter your Password',
-                            inputTitle: 'Password',
-                            textObscure: !_isPasswordVisible,
-                            textController: _passwordController,
-                            keyboardType: TextInputType.visiblePassword,
-                            icon: IconButton(
-                              onPressed: () => setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              }),
-                              icon: Icon(
-                                _isPasswordVisible
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            validator: (value) => value == null || value.isEmpty
-                                ? "Password is required"
-                                : null,
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: Checkbox(
-                                      value: _rememberMe,
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _rememberMe = value ?? false;
-                                        });
-                                      },
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(4),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                          minWidth: constraints.maxWidth,
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 480),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (screenSize.width <= 800)
+                                  Center(
+                                    child: Text(
+                                      'Migrantifly',
+                                      style: GoogleFonts.playfairDisplay(
+                                        fontSize: 48,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
                                       ),
-                                      activeColor: Colors.blue[800],
                                     ),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'Remember me',
+                                if (screenSize.width <= 800)
+                                  const SizedBox(height: 30),
+                                Center(
+                                  child: Text(
+                                    'Welcome Back',
+                                    style: GoogleFonts.playfairDisplay(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Center(
+                                  child: Text(
+                                    'Enter your email and password to access your account',
+                                    textAlign: TextAlign.center,
                                     style: GoogleFonts.lato(
                                       fontSize: 14,
-                                      color: Colors.grey[700],
+                                      color: Colors.grey[600],
                                     ),
                                   ),
-                                ],
-                              ),
-                              TextButton(
-                                onPressed: () {},
-                                child: Text(
-                                  'Forgot Password',
-                                  style: GoogleFonts.lato(
-                                    fontSize: 14,
-                                    color: Colors.blue[800],
-                                    fontWeight: FontWeight.w600,
+                                ),
+                                const SizedBox(height: 40),
+                                Inputfield(
+                                  inputHintText: 'Enter your email address',
+                                  inputTitle: 'Email Address',
+                                  textObscure: false,
+                                  textController: _emailController,
+                                  isreadOnly: isLoading,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return "Email is required";
+                                    } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                                      return "Enter a valid email";
+                                    }
+                                    return null;
+                                  },
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                                const SizedBox(height: 20),
+                                Inputfield(
+                                  isreadOnly: isLoading,
+                                  inputHintText: 'Enter your Password',
+                                  inputTitle: 'Password',
+                                  textObscure: !_isPasswordVisible,
+                                  textController: _passwordController,
+                                  keyboardType: TextInputType.visiblePassword,
+                                  icon: IconButton(
+                                    onPressed: () => setState(() {
+                                      _isPasswordVisible = !_isPasswordVisible;
+                                    }),
+                                    icon: Icon(
+                                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  validator: (value) =>
+                                  value == null || value.isEmpty ? "Password is required" : null,
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        SizedBox(
+                                          height: 24,
+                                          width: 24,
+                                          child: Checkbox(
+                                            value: _rememberMe,
+                                            onChanged: (value) {
+                                              setState(() {
+                                                _rememberMe = value ?? false;
+                                              });
+                                            },
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            activeColor: Colors.blue[800],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(
+                                          'Remember me',
+                                          style: GoogleFonts.lato(
+                                            fontSize: 14,
+                                            color: Colors.grey[700],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    TextButton(
+                                      onPressed: () {},
+                                      child: Text(
+                                        'Forgot Password',
+                                        style: GoogleFonts.lato(
+                                          fontSize: 14,
+                                          color: Colors.blue[800],
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 30),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 50,
+                                  child: ElevatedButton(
+                                    onPressed: isLoading ? null : _signIn,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue[800],
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: isLoading
+                                        ? const CircularProgressIndicator(color: Colors.white)
+                                        : Text(
+                                      'Log In',
+                                      style: GoogleFonts.lato(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 30),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 50,
-                            child: ElevatedButton(
-
-                              onPressed:isLoading ? null : _signIn,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue[800],
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: isLoading
-                                  ? const CircularProgressIndicator(color: Colors.white)
-                                  : Text(
-                                'Log In',
-                                style: GoogleFonts.lato(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
-                    ))),
-                  ),
+                    ),
+                  );
+                },
+              ),
+            ),
                 ],
               ),
             ),

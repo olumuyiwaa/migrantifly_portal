@@ -15,6 +15,7 @@ class Document {
   final String reviewNotes;
   final User? reviewedBy;
   final DateTime? reviewedAt;
+  final DateTime? expiryDate;
   final bool isRequired;
   final int v;
   final DateTime createdAt;
@@ -34,6 +35,7 @@ class Document {
     required this.reviewNotes,
     this.reviewedBy,
     this.reviewedAt,
+    this.expiryDate,
     required this.isRequired,
     required this.v,
     required this.createdAt,
@@ -42,32 +44,37 @@ class Document {
 
   factory Document.fromJson(Map<String, dynamic> json) {
     return Document(
-      id: json['_id'],
+      id: json['_id']?.toString() ?? '',
       applicationId: (json['applicationId'] is Map<String, dynamic>)
           ? Application.fromJson(json['applicationId'])
           : null,
       clientId: (json['clientId'] is Map<String, dynamic>)
           ? User.fromJson(json['clientId'])
           : null,
-      type: json['type'],
-      name: json['name'],
-      originalName: json['originalName'],
-      fileUrl: json['fileUrl'],
-      fileSize: json['fileSize'],
-      mimeType: json['mimeType'],
-      status: json['status'],
-      reviewNotes: json['reviewNotes'],
+      type: json['type']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      originalName: json['originalName']?.toString() ?? '',
+      fileUrl: json['fileUrl']?.toString() ?? '',
+      fileSize: (json['fileSize'] as num?)?.toInt() ?? 0,
+      mimeType: json['mimeType']?.toString() ?? 'application/octet-stream',
+      status: json['status']?.toString() ?? '',
+      reviewNotes: json['reviewNotes']?.toString() ?? '',
       reviewedBy: (json['reviewedBy'] != null &&
           json['reviewedBy'] is Map<String, dynamic>)
           ? User.fromJson(json['reviewedBy'])
           : null,
       reviewedAt: json['reviewedAt'] != null
-          ? DateTime.tryParse(json['reviewedAt'])
+          ? DateTime.tryParse(json['reviewedAt'].toString())
           : null,
-      isRequired: json['isRequired'] ?? false,
-      v: json['__v'] ?? 0,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      expiryDate: json['expiryDate'] != null
+          ? DateTime.tryParse(json['expiryDate'].toString())
+          : null,
+      isRequired: (json['isRequired'] as bool?) ?? false,
+      v: (json['__v'] as num?)?.toInt() ?? 0,
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -86,10 +93,18 @@ class Document {
       "reviewNotes": reviewNotes,
       "reviewedBy": reviewedBy?.toJson(),
       "reviewedAt": reviewedAt?.toIso8601String(),
+      "expiryDate": expiryDate?.toIso8601String(),
       "isRequired": isRequired,
       "__v": v,
       "createdAt": createdAt.toIso8601String(),
       "updatedAt": updatedAt.toIso8601String(),
     };
+  }
+
+  static List<Document> listFromJson(List<dynamic> data) {
+    return data
+        .whereType<Map<String, dynamic>>()
+        .map((e) => Document.fromJson(e))
+        .toList();
   }
 }
