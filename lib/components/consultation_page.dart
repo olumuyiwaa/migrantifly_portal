@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../api/api_delete.dart';
 import '../api/api_get.dart';
+import '../api/api_post.dart';
 import '../api/api_update.dart';
 import '../constants.dart';
 import '../models/class_consultation.dart';
@@ -512,12 +513,14 @@ class _ConsultationPageState extends State<ConsultationPage> {
     }
   }
 
+  String userRole = '';
   Future<void> getUserInfo() async {
     try {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       if (mounted) {
         setState(() {
           userID = prefs.getString('id') ?? '';
+          userRole = prefs.getString('role') ?? '';
         });
       }
     } catch (e) {
@@ -576,6 +579,7 @@ class _ConsultationPageState extends State<ConsultationPage> {
           ConsultationHeader(
             consultationType: consultationType,
             consultationStatus: consultationStatus,
+          consultationID:widget.consultation.id,userRole:userRole,
             onEdit: () {
               _showEditConsultationFormModal(context, widget.consultation);
             },
@@ -608,15 +612,142 @@ class _ConsultationPageState extends State<ConsultationPage> {
     );
   }
 }
+Future<void> _assignAdviser(BuildContext context, String consultationId) async {
+  // Show loading dialog with adviser selection
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => _AssignAdviserDialog(consultationId: consultationId),
+  );
+}
+// Separate StatefulWidget for Assign Adviser Dialog
+class _AssignAdviserDialog extends StatefulWidget {
+  final String consultationId;
+
+  const _AssignAdviserDialog({required this.consultationId});
+
+  @override
+  State<_AssignAdviserDialog> createState() => _AssignAdviserDialogState();
+}
+
+class _AssignAdviserDialogState extends State<_AssignAdviserDialog> {
+  User? selectedAdviser;
+  List<User> advisers = [];
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAllUsers();
+  }
+
+  Future<void> _fetchAllUsers() async {
+    if (mounted) setState(() => _isLoading = true);
+
+    try {
+      // Step 1: Load from cache
+      final cachedUsers = await loadCachedUsers();
+      advisers = cachedUsers.where((user) => user.role == 'adviser').toList();
+
+      if (mounted && advisers.isNotEmpty) {
+        setState(() {}); // update UI with cached data first
+      }
+
+      // Step 2: Fetch fresh users from API
+      final freshUsers = await fetchUsers();
+      await cacheUsers(freshUsers);
+
+      // Step 3: Filter advisers from fresh list
+      final freshAdvisers = freshUsers.where((user) => user.role == 'adviser').toList();
+
+      if (mounted) {
+        setState(() {
+          advisers = freshAdvisers;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading users: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      title: const Text('Assign Adviser'),
+      content: _isLoading
+          ? const SizedBox(
+        height: 100,
+        child: Center(child: CircularProgressIndicator()),
+      )
+          : DropdownButtonFormField<User>(
+        decoration: const InputDecoration(
+          labelText: "Select Adviser",
+          border: OutlineInputBorder(),
+        ),
+        value: selectedAdviser,
+        items: advisers
+            .map(
+              (adviser) => DropdownMenuItem<User>(
+            value: adviser,
+            child: Text(adviser.fullName.capitalizeWords()),
+          ),
+        )
+            .toList(),
+        onChanged: (value) {
+          setState(() {
+            selectedAdviser = value;
+          });
+        },
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            if (selectedAdviser == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    "Please select an adviser",
+                    textAlign: TextAlign.center,
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+
+            final adviserId = selectedAdviser!.id;
+            await assignAdviserConsultation(context, widget.consultationId, adviserId);
+          },
+          child: const Text('Assign'),
+        ),
+      ],
+    );
+  }
+}
 
 class ConsultationHeader extends StatelessWidget {
   final String consultationType;
+  final String consultationID;
+  final String userRole;
   final String consultationStatus;
   final VoidCallback onEdit;
 
   const ConsultationHeader({
     super.key,
     required this.consultationType,
+    required this.consultationID,
+    required this.userRole,
     required this.consultationStatus,
     required this.onEdit,
   });
@@ -688,6 +819,30 @@ class ConsultationHeader extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (userRole.toLowerCase() == "admin")
+                  ElevatedButton.icon(
+                    icon: const Icon(
+                      Icons.person,
+                      color: Colors.white,
+                    ),
+                    label: const Text(
+                      'Assign Adviser',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    onPressed: () {
+                      _assignAdviser(context, consultationID);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                if (!consultationStatus.toLowerCase().contains("complete"))
+                  SizedBox(width: 12,),
                 // Action button
                 if (!consultationStatus.toLowerCase().contains("complete"))
                   IconButton(

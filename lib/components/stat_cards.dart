@@ -204,6 +204,22 @@ class _SystemHealthCardState extends State<SystemHealthCard> {
 
   @override
   Widget build(BuildContext context) {
+    String formatTimestamp(String ts) {
+      if (ts.isEmpty) return '—';
+      try {
+        final dt = DateTime.parse(ts).toLocal();
+        final y = dt.year.toString().padLeft(4, '0');
+        final m = dt.month.toString().padLeft(2, '0');
+        final d = dt.day.toString().padLeft(2, '0');
+        final hh = dt.hour.toString().padLeft(2, '0');
+        final mm = dt.minute.toString().padLeft(2, '0');
+        return "$y-$m-$d";
+      } catch (_) {
+        // If parsing fails, just return the original string
+        return ts;
+      }
+    }
+
     return _loading
         ? const Center(child: CircularProgressIndicator(color: Colors.blue,))
         : _health == null
@@ -294,16 +310,15 @@ class _SystemHealthCardState extends State<SystemHealthCard> {
               ],
             ),
             const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                "Updated: ${_health!.timestamp}",
-                style: const TextStyle(
-                  color: Colors.white38,
-                  fontSize: 12,
-                ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+              const Text("Updated:", style: TextStyle(color: Colors.white70,fontSize: 12)),
+              Text(
+                formatTimestamp(_health!.timestamp),
+                style: const TextStyle(color: Colors.white,fontSize: 12),
               ),
-            ),
+            ],),
           ],
         ),
     );

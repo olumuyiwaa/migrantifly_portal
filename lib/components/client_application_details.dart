@@ -1082,18 +1082,14 @@ class ApplicationDetailsPage extends StatelessWidget {
                   setState(() => uploadProgress = i / 10);
                 }
 
-                final response = await uploadDocument(
+                await uploadDocument(
+                  context: context,
                   applicationId: application.id,
                   documentType: selectedType!,
                   selectedFile: selectedFile,
                 );
 
                 setState(() => isUploading = false);
-
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Document uploaded successfully!")),
-                );
               } catch (e) {
                 setState(() => isUploading = false);
                 ScaffoldMessenger.of(context).showSnackBar(

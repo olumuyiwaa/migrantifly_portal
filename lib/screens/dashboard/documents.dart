@@ -343,7 +343,7 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
                             ),
                             child: Text(
                               isSelected ? "Selected" : "Select",
-                              style: const TextStyle(fontSize: 12),
+                              style:  TextStyle(fontSize: 12,color:  isSelected ?Colors.white:Colors.blue),
                             ),
                           ),
                         ),
@@ -373,7 +373,24 @@ class _DocumentsWidgetState extends State<DocumentsWidget> {
   Widget _buildDocumentDetailPanel() {
     final doc = documents[_selectedIndex];
 
-    return DocumentDetails(doc: doc,onClose:_clearSelection,isClient: false,);
+    return DocumentDetails(
+      doc: doc,
+      isClient: false,
+      onClose: () => Navigator.pop(context),
+      onReviewed: (delta) {
+        setState(() {
+          // Update whatever the parent holds (list/detail)
+          // For example:
+          final idx = documents.indexWhere((d) => d.id == doc.id);
+          if (idx != -1) {
+            documents[idx] = documents[idx].copyWith(
+              status: delta['status'] as String,
+              reviewNotes: delta['reviewNotes'] as String,
+            );
+          }
+        });
+      },
+    );
   }
 
   IconData _getDocumentIcon(Document doc) {

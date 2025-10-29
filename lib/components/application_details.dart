@@ -43,7 +43,13 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
     _loadDocuments();
     getUserInfo();
   }
-
+  String userRole = '';
+  Future<void> getUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userRole = prefs.getString('role') ?? '';
+    });
+  }
   @override
   void dispose() {
     staffInputController.dispose();
@@ -133,15 +139,6 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
           ),
         ),
       ),
-    );
-  }
-
-  Future<void> _assignAdviser(BuildContext context, String applicationId) async {
-    // Show loading dialog with adviser selection
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => _AssignAdviserDialog(applicationId: applicationId),
     );
   }
 
@@ -250,18 +247,14 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
                   setState(() => uploadProgress = i / 10);
                 }
 
-                final response = await uploadDocument(
+                await uploadDocument(
+                  context: context,
                   applicationId: widget.application.id,
                   documentType: selectedType!,
                   selectedFile: selectedFile,
                 );
 
                 setState(() => isUploading = false);
-
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Document uploaded successfully!")),
-                );
               } catch (e) {
                 setState(() => isUploading = false);
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -876,13 +869,6 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
   }
 
 
-  String userRole = '';
-  Future<void> getUserInfo() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      userRole = prefs.getString('role') ?? '';
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1256,6 +1242,14 @@ class _ApplicationDetailsPreviewModalState extends State<ApplicationDetailsPrevi
   }
 }
 
+Future<void> _assignAdviser(BuildContext context, String applicationId) async {
+  // Show loading dialog with adviser selection
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => _AssignAdviserDialog(applicationId: applicationId),
+  );
+}
 // Separate StatefulWidget for Assign Adviser Dialog
 class _AssignAdviserDialog extends StatefulWidget {
   final String applicationId;
@@ -1369,14 +1363,5 @@ class _AssignAdviserDialogState extends State<_AssignAdviserDialog> {
         ),
       ],
     );
-  }
-}
-
-extension StringCasingExtension on String {
-  String capitalizeWords() {
-    return split("_")
-        .map((word) =>
-    word.isNotEmpty ? "${word[0].toUpperCase()}${word.substring(1)}" : "")
-        .join(" ");
   }
 }

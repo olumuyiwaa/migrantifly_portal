@@ -101,6 +101,47 @@ class Document {
     };
   }
 
+  Document copyWith({
+    String? id,
+    Application? applicationId,
+    User? clientId,
+    String? type,
+    String? name,
+    String? originalName,
+    String? fileUrl,
+    int? fileSize,
+    String? mimeType,
+    String? status,
+    String? reviewNotes,
+    User? reviewedBy,
+    DateTime? reviewedAt,
+    DateTime? expiryDate,
+    bool? isRequired,
+    int? v,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Document(
+      id: id ?? this.id,
+      applicationId: applicationId ?? this.applicationId,
+      clientId: clientId ?? this.clientId,
+      type: type ?? this.type,
+      name: name ?? this.name,
+      originalName: originalName ?? this.originalName,
+      fileUrl: fileUrl ?? this.fileUrl,
+      fileSize: fileSize ?? this.fileSize,
+      mimeType: mimeType ?? this.mimeType,
+      status: status ?? this.status,
+      reviewNotes: reviewNotes ?? this.reviewNotes,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      expiryDate: expiryDate ?? this.expiryDate,
+      isRequired: isRequired ?? this.isRequired,
+      v: v ?? this.v,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );}
+
   static List<Document> listFromJson(List<dynamic> data) {
     return data
         .whereType<Map<String, dynamic>>()

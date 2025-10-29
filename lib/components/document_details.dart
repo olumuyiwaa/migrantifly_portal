@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api/api_post.dart';
 import '../constants.dart';
 import '../models/class_documents.dart';
 
@@ -9,7 +10,11 @@ class DocumentDetails extends StatefulWidget {
   final Document doc;
   final VoidCallback onClose;
   final bool isClient;
-  const DocumentDetails({super.key, required this.doc, required this.onClose, required this.isClient});
+  final ValueChanged<Map<String, dynamic>>? onReviewed;
+
+  const DocumentDetails({super.key, required this.doc, required this.onClose, required this.isClient,
+    this.onReviewed,
+  });
 
   @override
   State<DocumentDetails> createState() => _DocumentDetailsState();
@@ -196,7 +201,7 @@ class _DocumentDetailsState extends State<DocumentDetails> {
                       if (widget.doc.reviewedBy != null)
                         _buildDetailRow(Icons.person_outline, "Reviewed By", widget.doc.reviewedBy!.fullName),
                       if (widget.doc.reviewNotes.isNotEmpty)
-                        _buildDetailRow(Icons.notes_outlined, "Review Notes", widget.doc.reviewNotes),
+                        _buildDetailRow(Icons.notes_outlined, "Review Notes",widget.doc.reviewNotes),
                     ]),
                   ],
 
@@ -208,17 +213,30 @@ class _DocumentDetailsState extends State<DocumentDetails> {
                     children: [
                       if (userRole.toLowerCase() != "client")
                         ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
-                        ),
-                        onPressed: () => reviewDoc(context, widget.doc.id),
-                        icon: const Icon(Icons.rate_review_rounded,color: Colors.white,),
-                        label: const Text("Review Document",style: TextStyle(color: Colors.white),),
-                      ),
+                          onPressed: () async {
+                            final res = await reviewDoc(context, widget.doc.id);
+                            if (!mounted) return;
+                            if (res != null && res['success'] == true) {
+                              // Notify parent about the change
+                              widget.onReviewed?.call({
+                                'documentId': widget.doc.id,
+                                'status': res['status'],
+                                'reviewNotes': res['reviewNotes'],
+                              });
+
+                            }
+                          },
+                          icon: const Icon(Icons.rate_review_rounded, color: Colors.white),
+                          label: const Text("Review Document", style: TextStyle(color: Colors.white)),
+                        )
+                      ,
                       const SizedBox(height: 12),
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
@@ -302,12 +320,14 @@ Widget _buildDetailRow(IconData icon, String label, String value) {
     ),
   );
 }
-void reviewDoc(BuildContext context, String documentId) {
+// 3) Make the dialog return the chosen values to the caller on success
+Future<Map<String, dynamic>?> reviewDoc(BuildContext context, String documentId) {
   String note = '';
-  String selectedStatus = "pending";
-  List<String> documentStatus = ['pending', 'approved', 'rejected', 'under_review'];
+  String selectedStatus = "under_review";
+  List<String> documentStatus = ['under_review', 'approved', 'rejected'];
+  bool reviewing = false;
 
-  showDialog(
+  return showDialog<Map<String, dynamic>>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
@@ -318,28 +338,24 @@ void reviewDoc(BuildContext context, String documentId) {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-            DropdownButtonFormField<String>(
-            value: selectedStatus,
-            decoration: const InputDecoration(
-              labelText: "Document Status",
-              border: OutlineInputBorder(),
-            ),
-            items: documentStatus
-                .map(
-                  (status) => DropdownMenuItem(
-                value: status,
-                child: Text(
-                  status[0].toUpperCase() + status.substring(1),
+              DropdownButtonFormField<String>(
+                value: selectedStatus,
+                decoration: const InputDecoration(
+                  labelText: "Document Status",
+                  border: OutlineInputBorder(),
                 ),
+                items: documentStatus
+                    .map((status) => DropdownMenuItem(
+                  value: status,
+                  child: Text((status[0].toUpperCase() + status.substring(1)).replaceAll("_", " ")),
+                ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedStatus = value!;
+                  });
+                },
               ),
-            )
-                .toList(),
-            onChanged: (value) {
-              setState(() {
-                selectedStatus = value!;
-              });
-            },
-          ),
               const SizedBox(height: 12),
               TextField(
                 maxLines: 4,
@@ -354,21 +370,67 @@ void reviewDoc(BuildContext context, String documentId) {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(null),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            padding: const EdgeInsets.all(12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              padding: const EdgeInsets.all(12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-          ),
-            onPressed: () async {
-              Navigator.of(context).pop();
+            onPressed: reviewing
+                ? null
+                : () async {
+              setState(() {
+                reviewing = true;
+              });
+              Map<String, dynamic> result = {};
+              try {
+                result = await reviewDocument(
+                  context: context,
+                  documentId: documentId,
+                  status: selectedStatus,
+                  reviewNotes: note,
+                );
+              } finally {
+                setState(() {
+                  reviewing = false;
+                });
+              }
+              if (!context.mounted) return;
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(result['message'] ?? 'Done'),
+                  backgroundColor:
+                  result['success'] == true ? Colors.green : Colors.red,
+                ),
+              );
+
+              if (result['success'] == true) {
+                Navigator.of(context).pop({
+                  'success': true,
+                  'status': selectedStatus,
+                  'reviewNotes': note,
+                });
+              }
             },
-            child: const Text('Submit',style: TextStyle(color: Colors.white),),
+            child: reviewing
+                ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 2,
+              ),
+            )
+                : const Text(
+              'Submit',
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -447,6 +509,8 @@ Color _getStatusColor(String status) {
       return Colors.green;
     case 'rejected':
       return Colors.red;
+    case 'under_review':
+      return Colors.blueGrey;
     case 'pending':
     default:
       return Colors.orange;
