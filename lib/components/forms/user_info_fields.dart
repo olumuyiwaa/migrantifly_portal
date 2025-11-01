@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants.dart';
 import '../../models/class_users.dart';
@@ -42,7 +43,14 @@ class _UserInfoFieldsState extends State<UserInfoFields> {
     _entityDescController.text = widget.user.fullAddress;
     _representedCountryController.text = widget.user.representedCountry;
     _countryLocatedController.text = widget.user.countryLocated;
-
+    getUserInfo();
+  }
+  String userRole = '';
+  Future<void> getUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userRole = prefs.getString('role') ?? '';
+    });
   }
 
   @override
@@ -105,6 +113,7 @@ class _UserInfoFieldsState extends State<UserInfoFields> {
 
                 Row(spacing: defaultPadding,
                   children: [
+                    userRole.toLowerCase().contains("admin")?
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +133,13 @@ class _UserInfoFieldsState extends State<UserInfoFields> {
                           ),
                         ],
                       ),
-                    ),
+                    ):Expanded(child:  Inputfield(
+                      inputTitle: 'User Role',
+                      inputHintText: 'User Role',
+                      textController: TextEditingController(text: widget.user.role),
+                      textObscure: false,
+                      isreadOnly: true,
+                    )),
                     Expanded(child:  Inputfield(
                       inputTitle: 'Phone Number',
                       inputHintText: 'Enter phone number',
@@ -145,7 +160,7 @@ class _UserInfoFieldsState extends State<UserInfoFields> {
 
 
                 const SizedBox(height: 40),
-
+                if(userRole.toLowerCase().contains("admin"))
                 // Submit button
                 Align(
                   alignment: Alignment.centerRight,

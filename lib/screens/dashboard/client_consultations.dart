@@ -856,6 +856,23 @@ class ConsultationDetailsDialog extends StatelessWidget {
                 spacing: 12,
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
+                  if(consultation.status.toLowerCase().contains("pending_payment"))
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text('Make Payment'),
+                    ),
+                  if(consultation.status.toLowerCase().contains("complete"))
                 ElevatedButton(
                   onPressed: (){
                       String? selectedVisaType;

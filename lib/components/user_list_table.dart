@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_delete.dart';
 import '../api/api_get.dart';
@@ -35,8 +36,15 @@ class _UserListTableState extends State<UserListTable> {
   void initState() {
     super.initState();
     _fetchAllUsers();
+    getUserInfo();
   }
-
+  String userRole = '';
+  Future<void> getUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userRole = prefs.getString('role') ?? '';
+    });
+  }
   @override
   void didUpdateWidget(UserListTable oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -264,7 +272,7 @@ class _UserListTableState extends State<UserListTable> {
                                     _showUserDetailsModal(
                                         context, user);
                                   },
-                                  icon: Icon(Icons.edit, size: 18))
+                                  icon: Icon(userRole.toLowerCase().contains("admin")?Icons.edit:Icons.file_open, size: 18))
                             ],
                           ))
                         ],

@@ -1,12 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_post.dart';
 import '../models/class_users.dart';
 
-class ActivePeopleWidget extends StatelessWidget {
+class ActivePeopleWidget extends StatefulWidget {
   final List<User> users;
   const ActivePeopleWidget({super.key, required this.users});
 
+  @override
+  State<ActivePeopleWidget> createState() => _ActivePeopleWidgetState();
+}
+
+class _ActivePeopleWidgetState extends State<ActivePeopleWidget> {
+  @override
+  void initState() {
+    super.initState();
+    getUserInfo();
+  }
+  String userRole = '';
+  Future<void> getUserInfo() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userRole = prefs.getString('role') ?? '';
+    });
+  }
   void showCreateAdviserModal(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     final emailController = TextEditingController();
@@ -459,6 +477,7 @@ class ActivePeopleWidget extends StatelessWidget {
             ),
           ),
           Spacer(),
+          if (userRole.toLowerCase().contains("admin"))
           OutlinedButton.icon(
             onPressed: () {
               showCreateAdviserModal(context);
@@ -507,7 +526,7 @@ class ActivePeopleWidget extends StatelessWidget {
       'Admin'];
 
     // Practice counts
-    final counts = [users.length, users.where((user) => user.role == "client").length, users.where((user) => user.role == "adviser").length, users.where((user) => user.role == "admin").length];
+    final counts = [widget.users.length, widget.users.where((user) => user.role == "client").length, widget.users.where((user) => user.role == "adviser").length, widget.users.where((user) => user.role == "admin").length];
 
     return Column(
       children: [
@@ -586,7 +605,7 @@ class ActivePeopleWidget extends StatelessWidget {
           ),
           const SizedBox(width: 8),
            Text(
-             users.where((user) => user.role.toLowerCase().contains("client")).length.toString(),
+             widget.users.where((user) => user.role.toLowerCase().contains("client")).length.toString(),
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -602,7 +621,7 @@ class ActivePeopleWidget extends StatelessWidget {
           ),
           const SizedBox(width: 8),
            Text(
-            users.where((user) => user.role.toLowerCase().contains("admin")|| user.role.toLowerCase().contains("adviser")).length.toString(),
+            widget.users.where((user) => user.role.toLowerCase().contains("admin")|| user.role.toLowerCase().contains("adviser")).length.toString(),
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
@@ -618,7 +637,7 @@ class ActivePeopleWidget extends StatelessWidget {
           ),
           const SizedBox(width: 8),
            Text(
-            users.length.toString(),
+            widget.users.length.toString(),
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,

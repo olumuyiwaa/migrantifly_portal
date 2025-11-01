@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/api_get.dart';
 import '../constants.dart';
 import '../models/class_system_health.dart';
 import '../models/dashboard_stats.dart';
 
-class StatCards extends StatelessWidget {
+class StatCards extends StatefulWidget {
   final DashboardStats? stats;
   final ValueChanged<int> onItemTapped;
   final ValueChanged<String> onTitleTapped;
@@ -18,8 +19,25 @@ class StatCards extends StatelessWidget {
   });
 
   @override
+  State<StatCards> createState() => _StatCardsState();
+}
+
+class _StatCardsState extends State<StatCards> {
+  @override
+  void initState() {
+  super.initState();
+  getUserInfo();
+  }
+  String userRole = '';
+  Future<void> getUserInfo() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  setState(() {
+  userRole = prefs.getString('role') ?? '';
+  });
+  }
+  @override
   Widget build(BuildContext context) {
-    if (stats == null){
+    if (widget.stats == null){
       return Container(
         margin: EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -28,7 +46,7 @@ class StatCards extends StatelessWidget {
       ),height:580,child: Center(child: CircularProgressIndicator(),),);
     }
     else {
-      final overview = stats!.overview;
+      final overview = widget.stats!.overview;
     return GridView.count(
       padding: const EdgeInsets.only(bottom: defaultPadding),
       crossAxisCount: 3,
@@ -43,8 +61,8 @@ class StatCards extends StatelessWidget {
           value: overview.activeClients.toString(),
           color: Colors.green,
           onTap: () {
-            onItemTapped(1);
-            onTitleTapped("Users");
+            widget.onItemTapped(1);
+            widget.onTitleTapped("Users");
           },
         ),
         StatCard(
@@ -52,8 +70,8 @@ class StatCards extends StatelessWidget {
           value: overview.totalApplications.toString(),
           color: Colors.deepPurple,
           onTap: () {
-            onItemTapped(2);
-            onTitleTapped("Applications");
+            widget.onItemTapped(2);
+            widget.onTitleTapped("Applications");
           },
         ),
 
@@ -62,8 +80,8 @@ class StatCards extends StatelessWidget {
           value: overview.pendingConsultations.toString(),
           color: Colors.orange,
           onTap: () {
-            onItemTapped(4);
-            onTitleTapped("Consultations");
+            widget.onItemTapped(4);
+            widget.onTitleTapped("Consultations");
           },
         ),
         StatCard(
@@ -71,8 +89,8 @@ class StatCards extends StatelessWidget {
           value: overview.pendingDocuments.toString(),
           color: Colors.lightBlue,
           onTap: () {
-            onItemTapped(5);
-            onTitleTapped("Documents");
+            widget.onItemTapped(5);
+            widget.onTitleTapped("Documents");
           },
         ),
         StatCard(
@@ -80,10 +98,11 @@ class StatCards extends StatelessWidget {
           value: overview.totalRevenue.toString(),
           color: Colors.indigo,
           onTap: () {
-            onItemTapped(8);
-            onTitleTapped("Transactions");
+            widget.onItemTapped(8);
+            widget.onTitleTapped("Transactions");
           },
         ),
+        if(userRole.toLowerCase().contains("admin"))
         SystemHealthCard(),
       ],
     );
@@ -169,6 +188,7 @@ class SystemHealthCard extends StatefulWidget {
 }
 
 class _SystemHealthCardState extends State<SystemHealthCard> {
+
   SystemHealth? _health;
   bool _loading = true;
 
